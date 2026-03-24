@@ -1,0 +1,2653 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "API per la gestione delle polizze vita.\nI servizi messi a disposizione sono: \n- Lista delle polizze filtrabili per codice fiscale/partyId, compagnia, agenzia e cip subagente. \n- Dettaglio della polizza.\n- Ruoli dei soggetti associati alla polizza. \n- Lista dei benificiari associati alla polizza. \n- Premi base (settimanali o mensili) associati alla polizza. \n- Premi multiramo associati alla polizza.\n\n- Premi PIP associati alla polizza. \n- Lista dei premi fondo associati alla polizza. \n- Lista delle proposte filtrabili per codice fiscale/partyId, compagnia, agenzia e cip subagente. \n- Dettaglio della proposta. \n- Ruoli dei soggetti associati alla proposta. \n\nModalità di autenticazione: \n- Autenticazione mediante JWT inserito nell'header utilizzando lo schema Bearer. \nEsempio: \\\"Authorization: Bearer {token}\\\"\nI dettagli sull'ottenimento di un JWT sono presenti al seguente link: https://code.servizi.gr-u.it/csl/public/-/wikis/CSL-Anagrafica-overview-sicurezza",
+    "version": "v.1.0.0",
+    "title": "Api gestione Polizze vita"
+  },
+  "host": "8080",
+  "basePath": "/api/compagnie",
+  "tags": [
+    {
+      "name": "polizze-controller",
+      "description": "Polizze Controller"
+    },
+    {
+      "name": "proposte-controller",
+      "description": "Proposte Controller"
+    }
+  ],
+  "paths": {
+    "/{compagnie}/portafoglio/vita/v1/polizze": {
+      "get": {
+        "tags": [
+          "polizze-controller"
+        ],
+        "summary": "getListaPolizze",
+        "operationId": "getListaPolizzeUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "X-UNIPOL-REQUESTID",
+            "in": "header",
+            "description": "X-UNIPOL-REQUESTID",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "agenzia",
+            "in": "query",
+            "description": "agenzia",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "compagnie",
+            "in": "path",
+            "description": "compagnie",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "flagVigore",
+            "in": "query",
+            "description": "flagVigore",
+            "required": false,
+            "type": "string",
+            "default": "S"
+          },
+          {
+            "name": "idSoggetto",
+            "in": "query",
+            "description": "idSoggetto",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "page",
+            "required": false,
+            "type": "integer",
+            "default": 0,
+            "format": "int32"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "per_page",
+            "required": false,
+            "type": "integer",
+            "default": 15,
+            "format": "int32"
+          },
+          {
+            "name": "tariffaCod1",
+            "in": "query",
+            "description": "tariffaCod1",
+            "required": false,
+            "type": "string",
+            "default": "INDIVIDUALE"
+          },
+          {
+            "name": "tariffaRamoMinisteriale",
+            "in": "query",
+            "description": "tariffaRamoMinisteriale",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "tipoSoggetto",
+            "in": "query",
+            "description": "tipoSoggetto",
+            "required": false,
+            "type": "string",
+            "default": "TUTTI"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/ResourceListaRicerca«ResourcePolizzaVitaSommario»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{compagnie}/portafoglio/vita/v1/polizze/{id}": {
+      "get": {
+        "tags": [
+          "polizze-controller"
+        ],
+        "summary": "getPolizza",
+        "operationId": "getPolizzaUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "X-UNIPOL-REQUESTID",
+            "in": "header",
+            "description": "X-UNIPOL-REQUESTID",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "_embedded",
+            "in": "query",
+            "description": "_embedded",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "compagnie",
+            "in": "path",
+            "description": "compagnie",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/EntityModel«ResourcePolizzaVita»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{compagnie}/portafoglio/vita/v1/polizze/{id}/beneficiari": {
+      "get": {
+        "tags": [
+          "polizze-controller"
+        ],
+        "summary": "getListaBeneficiari",
+        "operationId": "getListaBeneficiariUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "X-UNIPOL-REQUESTID",
+            "in": "header",
+            "description": "X-UNIPOL-REQUESTID",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "compagnie",
+            "in": "path",
+            "description": "compagnie",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/ResourceLista«ResourceBeneficiario»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{compagnie}/portafoglio/vita/v1/polizze/{id}/dettaglioPagamenti": {
+      "get": {
+        "tags": [
+          "polizze-controller"
+        ],
+        "summary": "getDettaglioPagamenti",
+        "operationId": "getDettaglioPagamentiUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "X-UNIPOL-REQUESTID",
+            "in": "header",
+            "description": "X-UNIPOL-REQUESTID",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "compagnie",
+            "in": "path",
+            "description": "compagnie",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/ResourceLista«ResourceDettaglioPagamenti»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{compagnie}/portafoglio/vita/v1/polizze/{id}/premi/base": {
+      "get": {
+        "tags": [
+          "polizze-controller"
+        ],
+        "summary": "getListaPremiBase",
+        "operationId": "getListaPremiBaseUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "X-UNIPOL-REQUESTID",
+            "in": "header",
+            "description": "X-UNIPOL-REQUESTID",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "compagnie",
+            "in": "path",
+            "description": "compagnie",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/ResourceLista«ResourcePremiBase»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{compagnie}/portafoglio/vita/v1/polizze/{id}/premi/fondi": {
+      "get": {
+        "tags": [
+          "polizze-controller"
+        ],
+        "summary": "getListaPremiFondi",
+        "operationId": "getListaPremiFondiUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "X-UNIPOL-REQUESTID",
+            "in": "header",
+            "description": "X-UNIPOL-REQUESTID",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "compagnie",
+            "in": "path",
+            "description": "compagnie",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/ResourceLista«ResourcePremiFondo»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{compagnie}/portafoglio/vita/v1/polizze/{id}/premi/multiramo": {
+      "get": {
+        "tags": [
+          "polizze-controller"
+        ],
+        "summary": "getPremiMultiramo",
+        "operationId": "getPremiMultiramoUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "X-UNIPOL-REQUESTID",
+            "in": "header",
+            "description": "X-UNIPOL-REQUESTID",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "compagnie",
+            "in": "path",
+            "description": "compagnie",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/ResourceLista«ResourcePremiMultiramo»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{compagnie}/portafoglio/vita/v1/polizze/{id}/premi/pip": {
+      "get": {
+        "tags": [
+          "polizze-controller"
+        ],
+        "summary": "getListaPremiPip",
+        "operationId": "getListaPremiPipUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "X-UNIPOL-REQUESTID",
+            "in": "header",
+            "description": "X-UNIPOL-REQUESTID",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "compagnie",
+            "in": "path",
+            "description": "compagnie",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/ResourceLista«ResourcePremiPip»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{compagnie}/portafoglio/vita/v1/polizze/{id}/ruoli": {
+      "get": {
+        "tags": [
+          "polizze-controller"
+        ],
+        "summary": "getListaRuoli",
+        "operationId": "getListaRuoliUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "X-UNIPOL-REQUESTID",
+            "in": "header",
+            "description": "X-UNIPOL-REQUESTID",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "compagnie",
+            "in": "path",
+            "description": "compagnie",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/ResourceLista«ResourceRuolo»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{compagnie}/portafoglio/vita/v1/proposte": {
+      "get": {
+        "tags": [
+          "proposte-controller"
+        ],
+        "summary": "getListaProposte",
+        "operationId": "getListaProposteUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "X-UNIPOL-REQUESTID",
+            "in": "header",
+            "description": "X-UNIPOL-REQUESTID",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "agenzia",
+            "in": "query",
+            "description": "agenzia",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "compagnie",
+            "in": "path",
+            "description": "compagnie",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "flagVigore",
+            "in": "query",
+            "description": "flagVigore",
+            "required": false,
+            "type": "string",
+            "default": "S"
+          },
+          {
+            "name": "idSoggetto",
+            "in": "query",
+            "description": "idSoggetto",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "page",
+            "required": false,
+            "type": "integer",
+            "default": 0,
+            "format": "int32"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "per_page",
+            "required": false,
+            "type": "integer",
+            "default": 15,
+            "format": "int32"
+          },
+          {
+            "name": "tariffaCod1",
+            "in": "query",
+            "description": "tariffaCod1",
+            "required": false,
+            "type": "string",
+            "default": "INDIVIDUALE"
+          },
+          {
+            "name": "tariffaRamoMinisteriale",
+            "in": "query",
+            "description": "tariffaRamoMinisteriale",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/ResourceListaRicerca«ResourcePropostaVitaSommario»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{compagnie}/portafoglio/vita/v1/proposte/{id}": {
+      "get": {
+        "tags": [
+          "proposte-controller"
+        ],
+        "summary": "getProposta",
+        "operationId": "getPropostaUsingGET",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "X-UNIPOL-REQUESTID",
+            "in": "header",
+            "description": "X-UNIPOL-REQUESTID",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "_embedded",
+            "in": "query",
+            "description": "_embedded",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "compagnie",
+            "in": "path",
+            "description": "compagnie",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/EntityModel«ResourcePropostaVita»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/{compagnie}/portafoglio/vita/v1/proposte/{id}/ruoli": {
+      "get": {
+        "tags": [
+          "proposte-controller"
+        ],
+        "summary": "getListaRuoli",
+        "operationId": "getListaRuoliUsingGET_1",
+        "produces": [
+          "*/*"
+        ],
+        "parameters": [
+          {
+            "name": "X-UNIPOL-REQUESTID",
+            "in": "header",
+            "description": "X-UNIPOL-REQUESTID",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "compagnie",
+            "in": "path",
+            "description": "compagnie",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/ResourceLista«ResourceRuolo»"
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "deprecated": false
+      }
+    }
+  },
+  "securityDefinitions": {
+    "Bearer": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
+    }
+  },
+  "definitions": {
+    "Embedded": {
+      "type": "object",
+      "properties": {
+        "beneficiari": {
+          "$ref": "#/definitions/ResourceLista«ResourceBeneficiario»"
+        },
+        "dettaglioPagamenti": {
+          "$ref": "#/definitions/ResourceLista«ResourceDettaglioPagamenti»"
+        },
+        "polizzaVita": {
+          "$ref": "#/definitions/ResourcePolizzaVita"
+        },
+        "premiBase": {
+          "$ref": "#/definitions/ResourceLista«ResourcePremiBase»"
+        },
+        "premiFondi": {
+          "$ref": "#/definitions/ResourceLista«ResourcePremiFondo»"
+        },
+        "premiMultiramo": {
+          "$ref": "#/definitions/ResourceLista«ResourcePremiMultiramo»"
+        },
+        "premiPip": {
+          "$ref": "#/definitions/ResourceLista«ResourcePremiPip»"
+        },
+        "ruoli": {
+          "$ref": "#/definitions/ResourceLista«ResourceRuolo»"
+        }
+      },
+      "title": "Embedded"
+    },
+    "EntityModel«ResourcePolizzaVita»": {
+      "type": "object",
+      "properties": {
+        "_embedded": {
+          "$ref": "#/definitions/Embedded"
+        },
+        "accessori": {
+          "type": "number",
+          "format": "double"
+        },
+        "agenzia": {
+          "type": "string"
+        },
+        "agenziaMadre": {
+          "type": "string"
+        },
+        "annomeseQt": {
+          "type": "string"
+        },
+        "aventeDiritto": {
+          "type": "string"
+        },
+        "campagna": {
+          "type": "string"
+        },
+        "canaleModificaStopCarta": {
+          "type": "string"
+        },
+        "causaleOperazione": {
+          "type": "string"
+        },
+        "cellaCensPtf": {
+          "type": "string"
+        },
+        "codAteco": {
+          "type": "string"
+        },
+        "codFiscale": {
+          "type": "string"
+        },
+        "codPagamento": {
+          "type": "string"
+        },
+        "codValuta": {
+          "type": "string"
+        },
+        "compagnia": {
+          "type": "string"
+        },
+        "comparto": {
+          "type": "string"
+        },
+        "contraenteAnagrafica": {
+          "type": "string"
+        },
+        "contraenteAssicurato": {
+          "type": "string"
+        },
+        "contraenteCap": {
+          "type": "string"
+        },
+        "convenzione": {
+          "type": "string"
+        },
+        "dataCreazione": {
+          "type": "string"
+        },
+        "dataEffetto": {
+          "type": "string"
+        },
+        "dataEffettoOperazione": {
+          "type": "string"
+        },
+        "dataEffettoStorno": {
+          "type": "string"
+        },
+        "dataElaborazione": {
+          "type": "string"
+        },
+        "dataEmissione": {
+          "type": "string"
+        },
+        "dataEmissioneStorno": {
+          "type": "string"
+        },
+        "dataModificaStopCarta": {
+          "type": "string"
+        },
+        "dataProssimaQt": {
+          "type": "string"
+        },
+        "dataRegolazionePremio": {
+          "type": "string"
+        },
+        "dataScadenza": {
+          "type": "string"
+        },
+        "dataScadenzaOriginaria": {
+          "type": "string"
+        },
+        "dataScadenzaVincolo": {
+          "type": "string"
+        },
+        "dataSospensione": {
+          "type": "string"
+        },
+        "dataVigore": {
+          "type": "string"
+        },
+        "dataVoltura": {
+          "type": "string"
+        },
+        "descConvenzione": {
+          "type": "string"
+        },
+        "descFrazionamento": {
+          "type": "string"
+        },
+        "descTariffa": {
+          "type": "string"
+        },
+        "descVincolataria": {
+          "type": "string"
+        },
+        "enteGestione": {
+          "type": "string"
+        },
+        "esercizioCompetenza": {
+          "type": "string"
+        },
+        "exRete1": {
+          "type": "string"
+        },
+        "exRete2": {
+          "type": "string"
+        },
+        "famigliaCommercialeLiv1": {
+          "type": "string"
+        },
+        "famigliaCommercialeLiv2": {
+          "type": "string"
+        },
+        "fascicoloInformativo": {
+          "type": "string"
+        },
+        "fea": {
+          "type": "string"
+        },
+        "feaMail": {
+          "type": "string"
+        },
+        "flagGestioneLimitata": {
+          "type": "boolean"
+        },
+        "flagSospensione": {
+          "type": "boolean"
+        },
+        "flagStopCarta": {
+          "type": "boolean"
+        },
+        "flagVigore": {
+          "type": "boolean"
+        },
+        "formaVendita": {
+          "type": "string"
+        },
+        "frazionamento": {
+          "type": "string"
+        },
+        "idPolizza": {
+          "type": "string"
+        },
+        "idProposta": {
+          "type": "string"
+        },
+        "idSoggetto": {
+          "type": "string"
+        },
+        "interessi": {
+          "type": "number",
+          "format": "double"
+        },
+        "links": {
+          "$ref": "#/definitions/Links"
+        },
+        "marchiaturaL1": {
+          "type": "string"
+        },
+        "marchiaturaL2": {
+          "type": "string"
+        },
+        "marchiaturaL3": {
+          "type": "string"
+        },
+        "multiofferta": {
+          "type": "string"
+        },
+        "numIndice": {
+          "type": "string"
+        },
+        "numPolizza": {
+          "type": "string"
+        },
+        "numRateFrazionamento": {
+          "type": "string"
+        },
+        "premioNetto": {
+          "type": "number",
+          "format": "double"
+        },
+        "presenzaVincolo": {
+          "type": "string"
+        },
+        "processoElaborazione": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "produttore": {
+          "type": "string"
+        },
+        "ramo": {
+          "type": "string"
+        },
+        "ramoGestione": {
+          "type": "string"
+        },
+        "regolazionePremio": {
+          "type": "string"
+        },
+        "rescindibilita": {
+          "type": "string"
+        },
+        "statoPagamento": {
+          "type": "string"
+        },
+        "subagente": {
+          "type": "string"
+        },
+        "tacitoRinnovo": {
+          "type": "string"
+        },
+        "tariffa": {
+          "type": "string"
+        },
+        "tariffaCategoria": {
+          "type": "string"
+        },
+        "tariffaCod1": {
+          "type": "string"
+        },
+        "tariffaGestione": {
+          "type": "string"
+        },
+        "tariffaOld": {
+          "type": "string"
+        },
+        "tariffaPremio": {
+          "type": "string"
+        },
+        "tariffaRamoMinisteriale": {
+          "type": "string"
+        },
+        "tassabileNsQuota": {
+          "type": "number",
+          "format": "double"
+        },
+        "tipoBlocco": {
+          "type": "string"
+        },
+        "tipoIndice": {
+          "type": "string"
+        },
+        "tipoOperazione": {
+          "type": "string"
+        },
+        "tipoPolizza": {
+          "type": "string"
+        },
+        "tipoRamo": {
+          "type": "string"
+        },
+        "tipoStorno": {
+          "type": "string"
+        },
+        "totalePolizza": {
+          "type": "number",
+          "format": "double"
+        },
+        "totaleTassabile": {
+          "type": "number",
+          "format": "double"
+        },
+        "totaleVersamentiAnnui": {
+          "type": "number",
+          "format": "double"
+        },
+        "tsElaborazione": {
+          "type": "string"
+        },
+        "versamentiAggiuntivi": {
+          "type": "string"
+        }
+      },
+      "title": "EntityModel«ResourcePolizzaVita»"
+    },
+    "EntityModel«ResourcePropostaVita»": {
+      "type": "object",
+      "properties": {
+        "_embedded": {
+          "$ref": "#/definitions/Embedded"
+        },
+        "accessori": {
+          "type": "number",
+          "format": "double"
+        },
+        "agenzia": {
+          "type": "string"
+        },
+        "agenziaMadre": {
+          "type": "string"
+        },
+        "codFiscale": {
+          "type": "string"
+        },
+        "codValuta": {
+          "type": "string"
+        },
+        "compagnia": {
+          "type": "string"
+        },
+        "comparto": {
+          "type": "string"
+        },
+        "contraenteAnagrafica": {
+          "type": "string"
+        },
+        "contraenteAssicurato": {
+          "type": "string"
+        },
+        "contraenteCap": {
+          "type": "string"
+        },
+        "convenzione": {
+          "type": "string"
+        },
+        "dataCreazione": {
+          "type": "string"
+        },
+        "dataEffetto": {
+          "type": "string"
+        },
+        "dataElaborazione": {
+          "type": "string"
+        },
+        "dataEmissione": {
+          "type": "string"
+        },
+        "dataFineValidita": {
+          "type": "string"
+        },
+        "dataOperazione": {
+          "type": "string"
+        },
+        "dataProssimaQt": {
+          "type": "string"
+        },
+        "dataProssimaRata": {
+          "type": "string"
+        },
+        "dataRegolazionePremio": {
+          "type": "string"
+        },
+        "dataScadenza": {
+          "type": "string"
+        },
+        "dataScadenzaVincolo": {
+          "type": "string"
+        },
+        "dataVigore": {
+          "type": "string"
+        },
+        "descConvenzione": {
+          "type": "string"
+        },
+        "descFrazionamento": {
+          "type": "string"
+        },
+        "descTariffa": {
+          "type": "string"
+        },
+        "enteGestione": {
+          "type": "string"
+        },
+        "exRete1": {
+          "type": "string"
+        },
+        "exRete2": {
+          "type": "string"
+        },
+        "fea": {
+          "type": "string"
+        },
+        "feaMail": {
+          "type": "string"
+        },
+        "flagVigore": {
+          "type": "boolean"
+        },
+        "frazionamento": {
+          "type": "string"
+        },
+        "idProposta": {
+          "type": "string"
+        },
+        "idSoggetto": {
+          "type": "string"
+        },
+        "interessi": {
+          "type": "number",
+          "format": "double"
+        },
+        "links": {
+          "$ref": "#/definitions/Links"
+        },
+        "numProposta": {
+          "type": "string"
+        },
+        "numRateFrazionamento": {
+          "type": "string"
+        },
+        "premioNetto": {
+          "type": "number",
+          "format": "double"
+        },
+        "prevDeroga": {
+          "type": "string"
+        },
+        "prevProcEsterna": {
+          "type": "string"
+        },
+        "processoElaborazione": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "produttore": {
+          "type": "string"
+        },
+        "ramo": {
+          "type": "string"
+        },
+        "ramoGestione": {
+          "type": "string"
+        },
+        "subagente": {
+          "type": "string"
+        },
+        "tariffa": {
+          "type": "string"
+        },
+        "tariffaCategoria": {
+          "type": "string"
+        },
+        "tariffaCod1": {
+          "type": "string"
+        },
+        "tariffaGestione": {
+          "type": "string"
+        },
+        "tariffaOld": {
+          "type": "string"
+        },
+        "tariffaPremio": {
+          "type": "string"
+        },
+        "tariffaRamoMinisteriale": {
+          "type": "string"
+        },
+        "tassabileNsQuota": {
+          "type": "number",
+          "format": "double"
+        },
+        "tipoCarico": {
+          "type": "string"
+        },
+        "tipoMatricola": {
+          "type": "string"
+        },
+        "tipoRamo": {
+          "type": "string"
+        },
+        "totalePolizza": {
+          "type": "number",
+          "format": "double"
+        },
+        "totaleTass": {
+          "type": "number",
+          "format": "double"
+        },
+        "versamentiAggiuntivi": {
+          "type": "string"
+        }
+      },
+      "title": "EntityModel«ResourcePropostaVita»"
+    },
+    "Links": {
+      "type": "object",
+      "properties": {
+        "empty": {
+          "type": "boolean"
+        }
+      },
+      "title": "Links"
+    },
+    "Pagination": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "page": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "perPage": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Pagination"
+    },
+    "ResourceBeneficiario": {
+      "type": "object",
+      "properties": {
+        "agenzia": {
+          "type": "string"
+        },
+        "codFiscale": {
+          "type": "string"
+        },
+        "dataCreazione": {
+          "type": "string"
+        },
+        "dataElaborazione": {
+          "type": "string"
+        },
+        "idBeneficiarioVita": {
+          "type": "string"
+        },
+        "percBeneficiario": {
+          "type": "string"
+        },
+        "processoElaborazione": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "testo": {
+          "type": "string"
+        },
+        "tipoBeneficiario": {
+          "type": "string"
+        },
+        "tipoSoggetto": {
+          "type": "string"
+        }
+      },
+      "title": "ResourceBeneficiario"
+    },
+    "ResourceDettaglioPagamenti": {
+      "type": "object",
+      "properties": {
+        "calendarioRate": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dataCalcoloStato": {
+          "type": "string"
+        },
+        "dataCreazione": {
+          "type": "string"
+        },
+        "dataElaborazione": {
+          "type": "string"
+        },
+        "dataUltimoPremioPagato": {
+          "type": "string"
+        },
+        "dataValiditaPremio": {
+          "type": "string"
+        },
+        "flagArretrati": {
+          "type": "boolean"
+        },
+        "flagArretratiQt": {
+          "type": "boolean"
+        },
+        "processoElaborazione": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "statoPagamenti": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "ultimoPremioPagato": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "title": "ResourceDettaglioPagamenti"
+    },
+    "ResourceListaRicerca«ResourcePolizzaVitaSommario»": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResourcePolizzaVitaSommario"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/Pagination"
+        }
+      },
+      "title": "ResourceListaRicerca«ResourcePolizzaVitaSommario»"
+    },
+    "ResourceListaRicerca«ResourcePropostaVitaSommario»": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResourcePropostaVitaSommario"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/Pagination"
+        }
+      },
+      "title": "ResourceListaRicerca«ResourcePropostaVitaSommario»"
+    },
+    "ResourceLista«ResourceBeneficiario»": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResourceBeneficiario"
+          }
+        }
+      },
+      "title": "ResourceLista«ResourceBeneficiario»"
+    },
+    "ResourceLista«ResourceDettaglioPagamenti»": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResourceDettaglioPagamenti"
+          }
+        }
+      },
+      "title": "ResourceLista«ResourceDettaglioPagamenti»"
+    },
+    "ResourceLista«ResourcePremiBase»": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResourcePremiBase"
+          }
+        }
+      },
+      "title": "ResourceLista«ResourcePremiBase»"
+    },
+    "ResourceLista«ResourcePremiFondo»": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResourcePremiFondo"
+          }
+        }
+      },
+      "title": "ResourceLista«ResourcePremiFondo»"
+    },
+    "ResourceLista«ResourcePremiMultiramo»": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResourcePremiMultiramo"
+          }
+        }
+      },
+      "title": "ResourceLista«ResourcePremiMultiramo»"
+    },
+    "ResourceLista«ResourcePremiPip»": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResourcePremiPip"
+          }
+        }
+      },
+      "title": "ResourceLista«ResourcePremiPip»"
+    },
+    "ResourceLista«ResourceRuolo»": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResourceRuolo"
+          }
+        }
+      },
+      "title": "ResourceLista«ResourceRuolo»"
+    },
+    "ResourcePolizzaVita": {
+      "type": "object",
+      "properties": {
+        "_embedded": {
+          "$ref": "#/definitions/Embedded"
+        },
+        "accessori": {
+          "type": "number",
+          "format": "double"
+        },
+        "agenzia": {
+          "type": "string"
+        },
+        "agenziaMadre": {
+          "type": "string"
+        },
+        "annomeseQt": {
+          "type": "string"
+        },
+        "aventeDiritto": {
+          "type": "string"
+        },
+        "campagna": {
+          "type": "string"
+        },
+        "canaleModificaStopCarta": {
+          "type": "string"
+        },
+        "causaleOperazione": {
+          "type": "string"
+        },
+        "cellaCensPtf": {
+          "type": "string"
+        },
+        "codAteco": {
+          "type": "string"
+        },
+        "codFiscale": {
+          "type": "string"
+        },
+        "codPagamento": {
+          "type": "string"
+        },
+        "codValuta": {
+          "type": "string"
+        },
+        "compagnia": {
+          "type": "string"
+        },
+        "comparto": {
+          "type": "string"
+        },
+        "contraenteAnagrafica": {
+          "type": "string"
+        },
+        "contraenteAssicurato": {
+          "type": "string"
+        },
+        "contraenteCap": {
+          "type": "string"
+        },
+        "convenzione": {
+          "type": "string"
+        },
+        "dataCreazione": {
+          "type": "string"
+        },
+        "dataEffetto": {
+          "type": "string"
+        },
+        "dataEffettoOperazione": {
+          "type": "string"
+        },
+        "dataEffettoStorno": {
+          "type": "string"
+        },
+        "dataElaborazione": {
+          "type": "string"
+        },
+        "dataEmissione": {
+          "type": "string"
+        },
+        "dataEmissioneStorno": {
+          "type": "string"
+        },
+        "dataModificaStopCarta": {
+          "type": "string"
+        },
+        "dataProssimaQt": {
+          "type": "string"
+        },
+        "dataRegolazionePremio": {
+          "type": "string"
+        },
+        "dataScadenza": {
+          "type": "string"
+        },
+        "dataScadenzaOriginaria": {
+          "type": "string"
+        },
+        "dataScadenzaVincolo": {
+          "type": "string"
+        },
+        "dataSospensione": {
+          "type": "string"
+        },
+        "dataVigore": {
+          "type": "string"
+        },
+        "dataVoltura": {
+          "type": "string"
+        },
+        "descConvenzione": {
+          "type": "string"
+        },
+        "descFrazionamento": {
+          "type": "string"
+        },
+        "descTariffa": {
+          "type": "string"
+        },
+        "descVincolataria": {
+          "type": "string"
+        },
+        "enteGestione": {
+          "type": "string"
+        },
+        "esercizioCompetenza": {
+          "type": "string"
+        },
+        "exRete1": {
+          "type": "string"
+        },
+        "exRete2": {
+          "type": "string"
+        },
+        "famigliaCommercialeLiv1": {
+          "type": "string"
+        },
+        "famigliaCommercialeLiv2": {
+          "type": "string"
+        },
+        "fascicoloInformativo": {
+          "type": "string"
+        },
+        "fea": {
+          "type": "string"
+        },
+        "feaMail": {
+          "type": "string"
+        },
+        "flagGestioneLimitata": {
+          "type": "boolean"
+        },
+        "flagSospensione": {
+          "type": "boolean"
+        },
+        "flagStopCarta": {
+          "type": "boolean"
+        },
+        "flagVigore": {
+          "type": "boolean"
+        },
+        "formaVendita": {
+          "type": "string"
+        },
+        "frazionamento": {
+          "type": "string"
+        },
+        "idPolizza": {
+          "type": "string"
+        },
+        "idProposta": {
+          "type": "string"
+        },
+        "idSoggetto": {
+          "type": "string"
+        },
+        "interessi": {
+          "type": "number",
+          "format": "double"
+        },
+        "marchiaturaL1": {
+          "type": "string"
+        },
+        "marchiaturaL2": {
+          "type": "string"
+        },
+        "marchiaturaL3": {
+          "type": "string"
+        },
+        "multiofferta": {
+          "type": "string"
+        },
+        "numIndice": {
+          "type": "string"
+        },
+        "numPolizza": {
+          "type": "string"
+        },
+        "numRateFrazionamento": {
+          "type": "string"
+        },
+        "premioNetto": {
+          "type": "number",
+          "format": "double"
+        },
+        "presenzaVincolo": {
+          "type": "string"
+        },
+        "processoElaborazione": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "produttore": {
+          "type": "string"
+        },
+        "ramo": {
+          "type": "string"
+        },
+        "ramoGestione": {
+          "type": "string"
+        },
+        "regolazionePremio": {
+          "type": "string"
+        },
+        "rescindibilita": {
+          "type": "string"
+        },
+        "statoPagamento": {
+          "type": "string"
+        },
+        "subagente": {
+          "type": "string"
+        },
+        "tacitoRinnovo": {
+          "type": "string"
+        },
+        "tariffa": {
+          "type": "string"
+        },
+        "tariffaCategoria": {
+          "type": "string"
+        },
+        "tariffaCod1": {
+          "type": "string"
+        },
+        "tariffaGestione": {
+          "type": "string"
+        },
+        "tariffaOld": {
+          "type": "string"
+        },
+        "tariffaPremio": {
+          "type": "string"
+        },
+        "tariffaRamoMinisteriale": {
+          "type": "string"
+        },
+        "tassabileNsQuota": {
+          "type": "number",
+          "format": "double"
+        },
+        "tipoBlocco": {
+          "type": "string"
+        },
+        "tipoIndice": {
+          "type": "string"
+        },
+        "tipoOperazione": {
+          "type": "string"
+        },
+        "tipoPolizza": {
+          "type": "string"
+        },
+        "tipoRamo": {
+          "type": "string"
+        },
+        "tipoStorno": {
+          "type": "string"
+        },
+        "totalePolizza": {
+          "type": "number",
+          "format": "double"
+        },
+        "totaleTassabile": {
+          "type": "number",
+          "format": "double"
+        },
+        "totaleVersamentiAnnui": {
+          "type": "number",
+          "format": "double"
+        },
+        "tsElaborazione": {
+          "type": "string"
+        },
+        "versamentiAggiuntivi": {
+          "type": "string"
+        }
+      },
+      "title": "ResourcePolizzaVita"
+    },
+    "ResourcePolizzaVitaSommario": {
+      "type": "object",
+      "properties": {
+        "agenzia": {
+          "type": "string"
+        },
+        "agenziaMadre": {
+          "type": "string"
+        },
+        "canaleModificaStopCarta": {
+          "type": "string"
+        },
+        "capitaleMaturato": {
+          "type": "number",
+          "format": "double"
+        },
+        "codFiscale": {
+          "type": "string"
+        },
+        "codValuta": {
+          "type": "string"
+        },
+        "compagnia": {
+          "type": "string"
+        },
+        "comparto": {
+          "type": "string"
+        },
+        "contraenteAssicurato": {
+          "type": "string"
+        },
+        "controvaloreContratto": {
+          "type": "number",
+          "format": "double"
+        },
+        "convenzione": {
+          "type": "string"
+        },
+        "cumuloPremiAttivi": {
+          "type": "number",
+          "format": "double"
+        },
+        "cumuloPremiPagati": {
+          "type": "number",
+          "format": "double"
+        },
+        "dataCalcoloRiscatto": {
+          "type": "string"
+        },
+        "dataCreazione": {
+          "type": "string"
+        },
+        "dataEffetto": {
+          "type": "string"
+        },
+        "dataEffettoStorno": {
+          "type": "string"
+        },
+        "dataElaborazione": {
+          "type": "string"
+        },
+        "dataEmissione": {
+          "type": "string"
+        },
+        "dataEmissioneStorno": {
+          "type": "string"
+        },
+        "dataModificaStopCarta": {
+          "type": "string"
+        },
+        "dataProssimaQt": {
+          "type": "string"
+        },
+        "dataScadenza": {
+          "type": "string"
+        },
+        "dataSospensione": {
+          "type": "string"
+        },
+        "dataTitoloArretrato": {
+          "type": "string"
+        },
+        "dataValiditaPremio": {
+          "type": "string"
+        },
+        "dataVigore": {
+          "type": "string"
+        },
+        "descConvenzione": {
+          "type": "string"
+        },
+        "descFrazionamento": {
+          "type": "string"
+        },
+        "descProdotto": {
+          "type": "string"
+        },
+        "descTariffa": {
+          "type": "string"
+        },
+        "enteGestione": {
+          "type": "string"
+        },
+        "exRete1": {
+          "type": "string"
+        },
+        "exRete2": {
+          "type": "string"
+        },
+        "famigliaCommercialeLiv1": {
+          "type": "string"
+        },
+        "famigliaCommercialeLiv2": {
+          "type": "string"
+        },
+        "fea": {
+          "type": "string"
+        },
+        "feaMail": {
+          "type": "string"
+        },
+        "flagAbilitaSinistro": {
+          "type": "boolean"
+        },
+        "flagArretrati": {
+          "type": "boolean"
+        },
+        "flagArretratiQt": {
+          "type": "boolean"
+        },
+        "flagPagamentoEmissione": {
+          "type": "boolean"
+        },
+        "flagSospensione": {
+          "type": "boolean"
+        },
+        "flagStopCarta": {
+          "type": "boolean"
+        },
+        "flagVigore": {
+          "type": "boolean"
+        },
+        "frazionamento": {
+          "type": "string"
+        },
+        "idPolizza": {
+          "type": "string"
+        },
+        "idProposta": {
+          "type": "string"
+        },
+        "idSoggetto": {
+          "type": "string"
+        },
+        "importoTitoloArretrato": {
+          "type": "number",
+          "format": "double"
+        },
+        "listaRuoli": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "numPolizza": {
+          "type": "string"
+        },
+        "numRateFrazionamento": {
+          "type": "string"
+        },
+        "processoElaborazione": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "prodotto": {
+          "type": "string"
+        },
+        "produttore": {
+          "type": "string"
+        },
+        "ramo": {
+          "type": "string"
+        },
+        "ramoGestione": {
+          "type": "string"
+        },
+        "rendita": {
+          "type": "number",
+          "format": "double"
+        },
+        "riscattoParziale": {
+          "type": "number",
+          "format": "double"
+        },
+        "subagente": {
+          "type": "string"
+        },
+        "tariffa": {
+          "type": "string"
+        },
+        "tariffaCategoria": {
+          "type": "string"
+        },
+        "tariffaCod1": {
+          "type": "string"
+        },
+        "tariffaGestione": {
+          "type": "string"
+        },
+        "tariffaOld": {
+          "type": "string"
+        },
+        "tariffaPremio": {
+          "type": "string"
+        },
+        "tariffaRamoMinisteriale": {
+          "type": "string"
+        },
+        "tipoStorno": {
+          "type": "string"
+        },
+        "totalePolizza": {
+          "type": "number",
+          "format": "double"
+        },
+        "totaleVersamentiAnnui": {
+          "type": "number",
+          "format": "double"
+        },
+        "valoreRiscatto": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "title": "ResourcePolizzaVitaSommario"
+    },
+    "ResourcePremiBase": {
+      "type": "object",
+      "properties": {
+        "agenzia": {
+          "type": "string"
+        },
+        "capitaleCasoMorte": {
+          "type": "number",
+          "format": "double"
+        },
+        "capitaleMaturato": {
+          "type": "number",
+          "format": "double"
+        },
+        "codiceModsetinfo": {
+          "type": "string"
+        },
+        "controvaloreContratto": {
+          "type": "number",
+          "format": "double"
+        },
+        "cumuloPremiAttivi": {
+          "type": "number",
+          "format": "double"
+        },
+        "cumuloPremiPagati": {
+          "type": "number",
+          "format": "double"
+        },
+        "dataCalcolo": {
+          "type": "string"
+        },
+        "dataCreazione": {
+          "type": "string"
+        },
+        "dataEdizione": {
+          "type": "string"
+        },
+        "dataElaborazione": {
+          "type": "string"
+        },
+        "descGestioneSeparata": {
+          "type": "string"
+        },
+        "descProdotto": {
+          "type": "string"
+        },
+        "gestioneSeparata": {
+          "type": "string"
+        },
+        "modelloFascicolo": {
+          "type": "string"
+        },
+        "modelloModsetinfo": {
+          "type": "string"
+        },
+        "processoElaborazione": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "prodotto": {
+          "type": "string"
+        },
+        "rendita": {
+          "type": "number",
+          "format": "double"
+        },
+        "riscattiParziali": {
+          "type": "number",
+          "format": "double"
+        },
+        "tpRecord": {
+          "type": "string"
+        },
+        "valoreRiscatto": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "title": "ResourcePremiBase"
+    },
+    "ResourcePremiFondo": {
+      "type": "object",
+      "properties": {
+        "agenzia": {
+          "type": "string"
+        },
+        "codFondo": {
+          "type": "string"
+        },
+        "controvaloreQuota": {
+          "type": "number",
+          "format": "double"
+        },
+        "dataCreazione": {
+          "type": "string"
+        },
+        "dataElaborazione": {
+          "type": "string"
+        },
+        "dataValoreQuota": {
+          "type": "string"
+        },
+        "descFondo": {
+          "type": "string"
+        },
+        "descLinea": {
+          "type": "string"
+        },
+        "idFondoVita": {
+          "type": "string"
+        },
+        "linea": {
+          "type": "string"
+        },
+        "numQuote": {
+          "type": "number",
+          "format": "double"
+        },
+        "processoElaborazione": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "tassoCambio": {
+          "type": "number",
+          "format": "double"
+        },
+        "tipologiaInvestimento": {
+          "type": "string"
+        },
+        "tpRecord": {
+          "type": "string"
+        },
+        "valoreQuota": {
+          "type": "number",
+          "format": "double"
+        },
+        "valuta": {
+          "type": "string"
+        }
+      },
+      "title": "ResourcePremiFondo"
+    },
+    "ResourcePremiMultiramo": {
+      "type": "object",
+      "properties": {
+        "agenzia": {
+          "type": "string"
+        },
+        "bilanciamento": {
+          "type": "string"
+        },
+        "dataCreazione": {
+          "type": "string"
+        },
+        "dataElaborazione": {
+          "type": "string"
+        },
+        "descGestioneSeparata": {
+          "type": "string"
+        },
+        "gestioneSeparata": {
+          "type": "string"
+        },
+        "percPremio": {
+          "type": "number",
+          "format": "double"
+        },
+        "prestazioneAssicurata": {
+          "type": "number",
+          "format": "double"
+        },
+        "processoElaborazione": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "profilo": {
+          "type": "string"
+        },
+        "totalePremiPagati": {
+          "type": "number",
+          "format": "double"
+        },
+        "tpRecord": {
+          "type": "string"
+        }
+      },
+      "title": "ResourcePremiMultiramo"
+    },
+    "ResourcePremiPip": {
+      "type": "object",
+      "properties": {
+        "agenzia": {
+          "type": "string"
+        },
+        "dataCreazione": {
+          "type": "string"
+        },
+        "dataElaborazione": {
+          "type": "string"
+        },
+        "dataInizioContribuzione": {
+          "type": "string"
+        },
+        "dataRifCasoMorte": {
+          "type": "string"
+        },
+        "premioAnnuoPur": {
+          "type": "number",
+          "format": "double"
+        },
+        "prestazioneCasoMorte": {
+          "type": "number",
+          "format": "double"
+        },
+        "processoElaborazione": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "tpRecord": {
+          "type": "string"
+        }
+      },
+      "title": "ResourcePremiPip"
+    },
+    "ResourcePropostaVita": {
+      "type": "object",
+      "properties": {
+        "_embedded": {
+          "$ref": "#/definitions/Embedded"
+        },
+        "accessori": {
+          "type": "number",
+          "format": "double"
+        },
+        "agenzia": {
+          "type": "string"
+        },
+        "agenziaMadre": {
+          "type": "string"
+        },
+        "codFiscale": {
+          "type": "string"
+        },
+        "codValuta": {
+          "type": "string"
+        },
+        "compagnia": {
+          "type": "string"
+        },
+        "comparto": {
+          "type": "string"
+        },
+        "contraenteAnagrafica": {
+          "type": "string"
+        },
+        "contraenteAssicurato": {
+          "type": "string"
+        },
+        "contraenteCap": {
+          "type": "string"
+        },
+        "convenzione": {
+          "type": "string"
+        },
+        "dataCreazione": {
+          "type": "string"
+        },
+        "dataEffetto": {
+          "type": "string"
+        },
+        "dataElaborazione": {
+          "type": "string"
+        },
+        "dataEmissione": {
+          "type": "string"
+        },
+        "dataFineValidita": {
+          "type": "string"
+        },
+        "dataOperazione": {
+          "type": "string"
+        },
+        "dataProssimaQt": {
+          "type": "string"
+        },
+        "dataProssimaRata": {
+          "type": "string"
+        },
+        "dataRegolazionePremio": {
+          "type": "string"
+        },
+        "dataScadenza": {
+          "type": "string"
+        },
+        "dataScadenzaVincolo": {
+          "type": "string"
+        },
+        "dataVigore": {
+          "type": "string"
+        },
+        "descConvenzione": {
+          "type": "string"
+        },
+        "descFrazionamento": {
+          "type": "string"
+        },
+        "descTariffa": {
+          "type": "string"
+        },
+        "enteGestione": {
+          "type": "string"
+        },
+        "exRete1": {
+          "type": "string"
+        },
+        "exRete2": {
+          "type": "string"
+        },
+        "fea": {
+          "type": "string"
+        },
+        "feaMail": {
+          "type": "string"
+        },
+        "flagVigore": {
+          "type": "boolean"
+        },
+        "frazionamento": {
+          "type": "string"
+        },
+        "idProposta": {
+          "type": "string"
+        },
+        "idSoggetto": {
+          "type": "string"
+        },
+        "interessi": {
+          "type": "number",
+          "format": "double"
+        },
+        "numProposta": {
+          "type": "string"
+        },
+        "numRateFrazionamento": {
+          "type": "string"
+        },
+        "premioNetto": {
+          "type": "number",
+          "format": "double"
+        },
+        "prevDeroga": {
+          "type": "string"
+        },
+        "prevProcEsterna": {
+          "type": "string"
+        },
+        "processoElaborazione": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "produttore": {
+          "type": "string"
+        },
+        "ramo": {
+          "type": "string"
+        },
+        "ramoGestione": {
+          "type": "string"
+        },
+        "subagente": {
+          "type": "string"
+        },
+        "tariffa": {
+          "type": "string"
+        },
+        "tariffaCategoria": {
+          "type": "string"
+        },
+        "tariffaCod1": {
+          "type": "string"
+        },
+        "tariffaGestione": {
+          "type": "string"
+        },
+        "tariffaOld": {
+          "type": "string"
+        },
+        "tariffaPremio": {
+          "type": "string"
+        },
+        "tariffaRamoMinisteriale": {
+          "type": "string"
+        },
+        "tassabileNsQuota": {
+          "type": "number",
+          "format": "double"
+        },
+        "tipoCarico": {
+          "type": "string"
+        },
+        "tipoMatricola": {
+          "type": "string"
+        },
+        "tipoRamo": {
+          "type": "string"
+        },
+        "totalePolizza": {
+          "type": "number",
+          "format": "double"
+        },
+        "totaleTass": {
+          "type": "number",
+          "format": "double"
+        },
+        "versamentiAggiuntivi": {
+          "type": "string"
+        }
+      },
+      "title": "ResourcePropostaVita"
+    },
+    "ResourcePropostaVitaSommario": {
+      "type": "object",
+      "properties": {
+        "agenzia": {
+          "type": "string"
+        },
+        "agenziaMadre": {
+          "type": "string"
+        },
+        "codFiscale": {
+          "type": "string"
+        },
+        "compagnia": {
+          "type": "string"
+        },
+        "comparto": {
+          "type": "string"
+        },
+        "convenzione": {
+          "type": "string"
+        },
+        "dataCreazione": {
+          "type": "string"
+        },
+        "dataEffetto": {
+          "type": "string"
+        },
+        "dataElaborazione": {
+          "type": "string"
+        },
+        "dataEmissione": {
+          "type": "string"
+        },
+        "dataRegolazionePremio": {
+          "type": "string"
+        },
+        "dataScadenza": {
+          "type": "string"
+        },
+        "dataVigore": {
+          "type": "string"
+        },
+        "descConvenzione": {
+          "type": "string"
+        },
+        "descFrazionamento": {
+          "type": "string"
+        },
+        "descTariffa": {
+          "type": "string"
+        },
+        "flagVigore": {
+          "type": "boolean"
+        },
+        "frazionamento": {
+          "type": "string"
+        },
+        "idProposta": {
+          "type": "string"
+        },
+        "idSoggetto": {
+          "type": "string"
+        },
+        "numProposta": {
+          "type": "string"
+        },
+        "numRateFrazionamento": {
+          "type": "string"
+        },
+        "processoElaborazione": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "produttore": {
+          "type": "string"
+        },
+        "ramo": {
+          "type": "string"
+        },
+        "subagente": {
+          "type": "string"
+        },
+        "tariffa": {
+          "type": "string"
+        },
+        "tariffaCategoria": {
+          "type": "string"
+        },
+        "tariffaCod1": {
+          "type": "string"
+        },
+        "tariffaGestione": {
+          "type": "string"
+        },
+        "tariffaOld": {
+          "type": "string"
+        },
+        "tariffaPremio": {
+          "type": "string"
+        },
+        "tariffaRamoMinisteriale": {
+          "type": "string"
+        },
+        "totalePolizza": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "title": "ResourcePropostaVitaSommario"
+    },
+    "ResourceRuolo": {
+      "type": "object",
+      "properties": {
+        "anagrafica": {
+          "type": "string"
+        },
+        "codFiscale": {
+          "type": "string"
+        },
+        "cognome": {
+          "type": "string"
+        },
+        "dataCreazione": {
+          "type": "string"
+        },
+        "dataElaborazione": {
+          "type": "string"
+        },
+        "idSoggetto": {
+          "type": "string"
+        },
+        "nome": {
+          "type": "string"
+        },
+        "processoElaborazione": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "ruolo": {
+          "type": "string"
+        }
+      },
+      "title": "ResourceRuolo"
+    }
+  }
+}
