@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building MCP Servers on Databricks</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F527;</text></svg>">
+</head>
+<body>
+<div id="app"></div>
+<script>
+(() => {
+  const DB = {
+    orange: '#FF3621', orangeLight: '#FF6B4A', orangeDim: 'rgba(255,54,33,0.12)',
+    teal: '#1B3139', tealDark: '#0F1F25', tealDeep: '#080F14',
+    tealLight: '#2A4D5A', tealMid: '#1E3A44',
+    w: '#FFFFFF', w90: 'rgba(255,255,255,0.9)', w80: 'rgba(255,255,255,0.8)',
+    w60: 'rgba(255,255,255,0.6)', w45: 'rgba(255,255,255,0.45)',
+    w30: 'rgba(255,255,255,0.3)', w20: 'rgba(255,255,255,0.2)',
+    w10: 'rgba(255,255,255,0.1)', w05: 'rgba(255,255,255,0.04)',
+  };
+
+  const slides = [
+
+    // ─────────────────────────────── 1. COVER
+    {
+      id: 'cover',
+      bg: `radial-gradient(ellipse at 50% 35%, #162A34 0%, ${DB.tealDeep} 70%)`,
+      accent: DB.orange,
+      body: `
+        <svg class="amp-logo" width="80" height="68" viewBox="0 0 100 85" fill="none">
+          <path d="M50 2 L93 24 L50 46 L7 24 Z" stroke="${DB.orange}" stroke-width="5.5" stroke-linejoin="round" fill="none"/>
+          <path d="M7 37 L50 59 L93 37" stroke="${DB.orange}" stroke-width="5.5" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+          <path d="M7 50 L50 72 L93 50" stroke="${DB.orange}" stroke-width="5.5" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+        </svg>
+        <div class="amp-wordmark A" style="--d:0.05s">MCP ON DATABRICKS</div>
+        <h1 class="A" style="--d:0.12s">Building MCP Servers<br><span style="color:${DB.orange}">on Databricks</span></h1>
+        <p class="amp-tagline A" style="--d:0.2s">Model Context Protocol &mdash; Connect AI Agents to Enterprise Data</p>
+        <div class="amp-pills A" style="--d:0.3s">
+          <span class="amp-pill amp-pill-orange">FastMCP</span>
+          <span class="amp-pill amp-pill-teal">Databricks SDK</span>
+          <span class="amp-pill amp-pill-gold">Production Ready</span>
+        </div>
+        <p class="amp-sub A" style="--d:0.4s">From prototype to production &mdash; a practical guide with real code examples</p>
+      `,
+    },
+
+    // ─────────────────────────────── 2. WHAT IS MCP?
+    {
+      id: 'what-is-mcp',
+      bg: `linear-gradient(160deg, #060D12, #0D1E27 40%, #132C38)`,
+      accent: DB.orange,
+      body: `
+        <h1>What is <span style="color:${DB.orange}">MCP</span>?</h1>
+        <h2>Model Context Protocol &mdash; the open standard for connecting AI assistants to tools and data</h2>
+        <div class="gap-grid">
+          <div class="gap-card A" style="--d:0.08s">
+            <div class="gap-ico gap-ico-cyan">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="1.6" stroke-linecap="round"><path d="M12 2L4 6v5c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V6l-8-4z"/></svg>
+            </div>
+            <div class="gap-num">STANDARD</div>
+            <strong>Open Protocol</strong>
+            <p>A universal JSON-RPC interface that any AI client (Claude, Copilot, custom agents) can use to discover and invoke tools. One server, many clients.</p>
+          </div>
+          <div class="gap-card A" style="--d:0.18s">
+            <div class="gap-ico gap-ico-rose">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FB7185" stroke-width="1.6" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <div class="gap-num">TOOLS</div>
+            <strong>Expose Functions</strong>
+            <p>Each tool is a typed Python function with a docstring. The AI reads the description, understands parameters, and calls the right tool at the right time.</p>
+          </div>
+          <div class="gap-card A" style="--d:0.28s">
+            <div class="gap-ico gap-ico-amber">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.6" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <div class="gap-num">TRANSPORT</div>
+            <strong>stdio or HTTP</strong>
+            <p>Runs locally via stdio (for Claude Code) or over HTTP/SSE for remote deployment. Same server code works for both transport modes.</p>
+          </div>
+        </div>
+        <div class="gap-footer A" style="--d:0.4s">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${DB.orangeLight}" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+          <span>Think of it as a USB-C port for AI &mdash; one standard connector, infinite devices</span>
+        </div>
+      `,
+    },
+
+    // ─────────────────────────────── 3. ARCHITECTURE OVERVIEW
+    {
+      id: 'architecture',
+      bg: `radial-gradient(ellipse at 50% 30%, #162A34 0%, ${DB.tealDeep} 70%)`,
+      accent: DB.orange,
+      body: `
+        <h1>Server <span style="color:${DB.orange}">Architecture</span></h1>
+        <h2>A modular MCP server that connects AI agents to Databricks services and external APIs</h2>
+        <div class="arch-diagram A" style="--d:0.1s">
+          <div class="arch-layer arch-layer-top">
+            <div class="arch-layer-label">AI CLIENTS</div>
+            <div class="arch-layer-chips">
+              <div class="arch-chip arch-chip-teal">Claude Code</div>
+              <div class="arch-chip arch-chip-teal">Claude Desktop</div>
+              <div class="arch-chip arch-chip-teal">Custom Agent</div>
+              <div class="arch-chip arch-chip-teal">Any MCP Client</div>
+            </div>
+          </div>
+          <div class="arch-down">
+            <svg width="14" height="26" viewBox="0 0 14 26" fill="none">
+              <path d="M7 0v18" stroke="${DB.w20}" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M1 12l6 8 6-8" stroke="${DB.orange}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
+            </svg>
+          </div>
+          <div class="arch-layer arch-layer-bridge">
+            <div class="arch-bridge-text">FastMCP SERVER &nbsp;&middot;&nbsp; server.py &nbsp;&middot;&nbsp; OAuth U2M Auth &nbsp;&middot;&nbsp; Tool Registration</div>
+          </div>
+          <div class="arch-down">
+            <svg width="14" height="26" viewBox="0 0 14 26" fill="none">
+              <path d="M7 0v18" stroke="${DB.w20}" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M1 12l6 8 6-8" stroke="${DB.orange}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
+            </svg>
+          </div>
+          <div class="arch-layer arch-layer-services">
+            <div class="arch-layer-label">TOOL DOMAINS (tools/)</div>
+            <div class="arch-layer-chips">
+              <div class="arch-chip arch-chip-cyan">sql.py</div>
+              <div class="arch-chip arch-chip-purple">lakebase.py</div>
+              <div class="arch-chip arch-chip-rose">models.py</div>
+              <div class="arch-chip arch-chip-gold">external_apis.py</div>
+              <div class="arch-chip arch-chip-green">vita_api.py</div>
+            </div>
+          </div>
+          <div class="arch-down">
+            <svg width="14" height="26" viewBox="0 0 14 26" fill="none">
+              <path d="M7 0v18" stroke="${DB.w20}" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M1 12l6 8 6-8" stroke="${DB.orange}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
+            </svg>
+          </div>
+          <div class="arch-layer arch-layer-db">
+            <div class="arch-layer-label arch-db-label">BACKENDS</div>
+            <div class="arch-db-inner">
+              <div class="arch-db-item">SQL Warehouse<small>Analytics queries via DBSQL</small></div>
+              <div class="arch-db-item">Lakebase<small>Postgres-wire transactional DB</small></div>
+              <div class="arch-db-item">Model Serving<small>LLM &amp; ML inference endpoints</small></div>
+              <div class="arch-db-item">External APIs<small>REST integrations (weather, etc.)</small></div>
+              <div class="arch-db-item">Customer APIs<small>Domain-specific REST services</small></div>
+              <div class="arch-db-item arch-db-gold">Unity Catalog<small>Governance &middot; Access &middot; Lineage</small></div>
+            </div>
+          </div>
+        </div>
+      `,
+    },
+
+    // ─────────────────────────────── 4. KEY LIBRARIES
+    {
+      id: 'libraries',
+      bg: `linear-gradient(160deg, #060D12, #0D1E27 40%, #132C38)`,
+      accent: '#64FFDA',
+      body: `
+        <h1>Key <span style="color:#64FFDA">Libraries</span></h1>
+        <h2>Three dependencies &mdash; that's all you need to build a production MCP server on Databricks</h2>
+        <div class="gap-grid">
+          <div class="gap-card A" style="--d:0.08s">
+            <div class="gap-ico gap-ico-green">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#64FFDA" stroke-width="1.6" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <div class="gap-num">MCP SDK</div>
+            <strong>FastMCP</strong>
+            <p>The official Python SDK for building MCP servers. Provides the <code class="ka-code">@mcp.tool()</code> decorator that turns any function into an AI-callable tool with automatic schema generation from type hints and docstrings.</p>
+            <div class="code-snip" style="margin-top:6px">
+              <span class="c-comment"># requirements.txt</span>
+              <span class="c-cmd">mcp&gt;=1.0.0</span>
+            </div>
+          </div>
+          <div class="gap-card A" style="--d:0.18s">
+            <div class="gap-ico gap-ico-cyan">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="1.6" stroke-linecap="round"><ellipse cx="12" cy="6" rx="9" ry="3"/><path d="M3 6v6c0 1.66 4.03 3 9 3s9-1.34 9-3V6"/><path d="M3 12v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6"/></svg>
+            </div>
+            <div class="gap-num">DATABRICKS</div>
+            <strong>databricks-sdk</strong>
+            <p>The unified Python SDK for all Databricks services. Handles OAuth authentication, SQL Warehouse execution via <code class="ka-code">statement_execution</code>, and Model Serving queries. One client object, all APIs.</p>
+            <div class="code-snip" style="margin-top:6px">
+              <span class="c-comment"># requirements.txt</span>
+              <span class="c-cmd">databricks-sdk&gt;=0.20.0</span>
+            </div>
+          </div>
+          <div class="gap-card A" style="--d:0.28s">
+            <div class="gap-ico gap-ico-purple">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="1.6" stroke-linecap="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+            </div>
+            <div class="gap-num">POSTGRES</div>
+            <strong>psycopg2</strong>
+            <p>The battle-tested PostgreSQL adapter for Python. Connects to Lakebase over the Postgres wire protocol using OAuth tokens as passwords. Supports full SQL read/write with <code class="ka-code">sslmode=require</code>.</p>
+            <div class="code-snip" style="margin-top:6px">
+              <span class="c-comment"># requirements.txt</span>
+              <span class="c-cmd">psycopg2-binary&gt;=2.9.0</span>
+            </div>
+          </div>
+        </div>
+      `,
+    },
+
+    // ─────────────────────────────── 5. SERVER ENTRYPOINT
+    {
+      id: 'server-entrypoint',
+      bg: `radial-gradient(ellipse at 30% 30%, #162A34 0%, ${DB.tealDeep} 70%)`,
+      accent: '#64FFDA',
+      body: `
+        <h1>Server <span style="color:#64FFDA">Entrypoint</span></h1>
+        <h2>server.py &mdash; 30 lines that wire everything together</h2>
+        <div class="found-grid">
+          <div class="found-panel A" style="--d:0.08s">
+            <div class="found-header found-h-green">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64FFDA" stroke-width="1.6" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              <strong>server.py</strong>
+            </div>
+            <div class="found-body">
+              <div class="code-snip" style="text-align:left">
+                <span class="c-comment"># 1. Create the MCP server</span>
+                <span class="c-cmd">from mcp.server.fastmcp import FastMCP</span>
+                <span class="c-cmd">from databricks.sdk import WorkspaceClient</span>
+                <span class="c-cmd" style="margin-top:6px">mcp = FastMCP("databricks-demo",</span>
+                <span class="c-cmd">&nbsp;&nbsp;instructions="Databricks assistant..."</span>
+                <span class="c-cmd">)</span>
+                <span class="c-cmd" style="margin-top:6px">w = WorkspaceClient(host=DATABRICKS_HOST)</span>
+                <span class="c-comment" style="margin-top:8px"># 2. Register tool domains</span>
+                <span class="c-cmd">from tools import sql, lakebase, models</span>
+                <span class="c-cmd">sql.register(mcp, w)</span>
+                <span class="c-cmd">lakebase.register(mcp, w)</span>
+                <span class="c-cmd">models.register(mcp, w)</span>
+                <span class="c-comment" style="margin-top:8px"># 3. Run</span>
+                <span class="c-cmd">if __name__ == "__main__":</span>
+                <span class="c-cmd">&nbsp;&nbsp;mcp.run()</span>
+              </div>
+            </div>
+          </div>
+          <div class="found-panel A" style="--d:0.2s">
+            <div class="found-header found-h-cyan">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5"/></svg>
+              <strong>Key Concepts</strong>
+            </div>
+            <div class="found-body">
+              <div class="mem-types">
+                <div class="mem-type">
+                  <span class="mem-type-dot mem-dot-cyan"></span>
+                  <div>
+                    <strong>FastMCP Instance</strong>
+                    <span>Creates the server, manages tool registry, handles JSON-RPC transport. The <code class="ka-code">instructions</code> param tells the AI what this server does.</span>
+                  </div>
+                </div>
+                <div class="mem-type">
+                  <span class="mem-type-dot mem-dot-purple"></span>
+                  <div>
+                    <strong>WorkspaceClient</strong>
+                    <span>Single authenticated client for all Databricks APIs. OAuth U2M tokens are refreshed automatically by the SDK.</span>
+                  </div>
+                </div>
+                <div class="mem-type">
+                  <span class="mem-type-dot mem-dot-gold"></span>
+                  <div>
+                    <strong>OAuth Helper</strong>
+                    <span>Extracts Bearer token from SDK auth for services that need raw tokens (e.g., Lakebase password field).</span>
+                  </div>
+                </div>
+              </div>
+              <div class="found-note" style="margin-top:8px">
+                <strong>Auth:</strong> Run <code class="ka-code">databricks auth login --host ...</code> once. SDK handles token refresh automatically.
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+    },
+
+    // ─────────────────────────────── 6. THE REGISTER PATTERN
+    {
+      id: 'register-pattern',
+      bg: `linear-gradient(160deg, #060D12, #0D1E27 40%, #132C38)`,
+      accent: '#A78BFA',
+      body: `
+        <h1>The <span style="color:#A78BFA">Register</span> Pattern</h1>
+        <h2>Modular tool domains &mdash; each file owns its tools, server.py just wires them</h2>
+        <div class="found-grid">
+          <div class="found-panel A" style="--d:0.08s">
+            <div class="found-header found-h-purple">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              <strong>Project Structure</strong>
+            </div>
+            <div class="found-body">
+              <div class="gov-tree" style="text-align:left">
+                <div class="gov-t-root" style="color:#fff;font-family:monospace;font-size:0.94rem;line-height:2">
+                  <div><strong style="color:#64FFDA">server.py</strong> <span style="color:${DB.w30}">&larr; entrypoint</span></div>
+                  <div><strong style="color:#F59E0B">config.py</strong> <span style="color:${DB.w30}">&larr; all settings</span></div>
+                  <div>tools/</div>
+                  <div>&nbsp;&nbsp;&#9500;&#9472; <strong style="color:#22D3EE">__init__.py</strong></div>
+                  <div>&nbsp;&nbsp;&#9500;&#9472; <strong style="color:#22D3EE">sql.py</strong> <span style="color:${DB.w30}">&larr; SQL Warehouse</span></div>
+                  <div>&nbsp;&nbsp;&#9500;&#9472; <strong style="color:#A78BFA">lakebase.py</strong> <span style="color:${DB.w30}">&larr; Lakebase R/W</span></div>
+                  <div>&nbsp;&nbsp;&#9500;&#9472; <strong style="color:#FB7185">models.py</strong> <span style="color:${DB.w30}">&larr; Model Serving</span></div>
+                  <div>&nbsp;&nbsp;&#9500;&#9472; <strong style="color:#F59E0B">external_apis.py</strong> <span style="color:${DB.w30}">&larr; Weather etc.</span></div>
+                  <div>&nbsp;&nbsp;&#9492;&#9472; <strong style="color:#64FFDA">vita_api.py</strong> <span style="color:${DB.w30}">&larr; Customer API</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="found-panel A" style="--d:0.2s">
+            <div class="found-header found-h-green">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64FFDA" stroke-width="1.6" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              <strong>The Pattern</strong>
+            </div>
+            <div class="found-body">
+              <p class="found-desc">Every tool module exports a single <code class="ka-code">register(mcp, w)</code> function. Tools are defined as closures that capture the MCP server and Databricks client.</p>
+              <div class="code-snip" style="text-align:left;margin-top:6px">
+                <span class="c-comment"># tools/any_domain.py</span>
+                <span class="c-cmd">def register(mcp, w):</span>
+                <span class="c-cmd">&nbsp;&nbsp;@mcp.tool()</span>
+                <span class="c-cmd">&nbsp;&nbsp;def my_tool(param: str) -> str:</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;"""Docstring = AI sees this."""</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;# Use w (WorkspaceClient) here</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;return json.dumps(result)</span>
+              </div>
+              <div class="ka-steps" style="margin-top:10px">
+                <div class="ka-step"><span class="ka-n">1</span><span style="font-size:0.94rem;color:${DB.w60}">Each domain file is self-contained</span></div>
+                <div class="ka-step"><span class="ka-n">2</span><span style="font-size:0.94rem;color:${DB.w60}">server.py imports + calls register()</span></div>
+                <div class="ka-step ka-step-final"><span class="ka-n ka-n-done">&#10003;</span><span style="font-size:0.94rem;color:${DB.w60}">Add new domains without touching existing code</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+    },
+
+    // ─────────────────────────────── 7. TOOL: SQL WAREHOUSE
+    {
+      id: 'tool-sql',
+      bg: `radial-gradient(ellipse at 50% 40%, #162A34 0%, ${DB.tealDeep} 70%)`,
+      accent: '#22D3EE',
+      body: `
+        <h1>Tool: <span style="color:#22D3EE">SQL Warehouse</span></h1>
+        <h2>tools/sql.py &mdash; Analytics queries on Databricks SQL with parameterized inputs</h2>
+        <div class="found-grid">
+          <div class="found-panel A" style="--d:0.08s">
+            <div class="found-header found-h-cyan">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="1.6" stroke-linecap="round"><ellipse cx="12" cy="6" rx="9" ry="3"/><path d="M3 6v6c0 1.66 4.03 3 9 3s9-1.34 9-3V6"/></svg>
+              <strong>execute_sql</strong>
+              <span class="found-h-tag">Generic</span>
+            </div>
+            <div class="found-body">
+              <div class="code-snip" style="text-align:left">
+                <span class="c-cmd">@mcp.tool()</span>
+                <span class="c-cmd">def execute_sql(query: str,</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;max_rows: int = 100) -> str:</span>
+                <span class="c-comment">&nbsp;&nbsp;"""Execute SQL on the Warehouse."""</span>
+                <span class="c-cmd" style="margin-top:4px">&nbsp;&nbsp;result = w.statement_execution</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;.execute_statement(</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;warehouse_id=SQL_WAREHOUSE_ID,</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;statement=query,</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;row_limit=max_rows,</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait_timeout="30s")</span>
+                <span class="c-cmd" style="margin-top:4px">&nbsp;&nbsp;columns = [c.name for c in</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;result.manifest.schema.columns]</span>
+                <span class="c-cmd">&nbsp;&nbsp;rows = result.result.data_array</span>
+                <span class="c-cmd">&nbsp;&nbsp;return json.dumps({...})</span>
+              </div>
+            </div>
+          </div>
+          <div class="found-panel A" style="--d:0.2s">
+            <div class="found-header found-h-cyan2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="1.6" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <strong>Parameterized Query</strong>
+              <span class="found-h-tag">Safe</span>
+            </div>
+            <div class="found-body">
+              <p class="found-desc">Use <code class="ka-code">StatementParameterListItem</code> for safe, typed parameters &mdash; prevents SQL injection.</p>
+              <div class="code-snip" style="text-align:left;margin-top:6px">
+                <span class="c-cmd">@mcp.tool()</span>
+                <span class="c-cmd">def get_high_sentiment_articles(</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;min_sentiment_score: float</span>
+                <span class="c-cmd">) -> str:</span>
+                <span class="c-cmd" style="margin-top:4px">&nbsp;&nbsp;result = w.statement_execution</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;.execute_statement(</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;statement=query,</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;parameters=[</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;StatementParameterListItem(</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name="min_score",</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;value=str(min_score),</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;type="DOUBLE")],</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait_timeout="30s")</span>
+              </div>
+              <div class="found-note" style="margin-top:8px">
+                <strong>Tip:</strong> Named parameters (<code class="ka-code">:min_score</code>) are type-checked server-side. Always prefer them over string interpolation.
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+    },
+
+    // ─────────────────────────────── 8. TOOL: LAKEBASE
+    {
+      id: 'tool-lakebase',
+      bg: `linear-gradient(160deg, #060D12, #0D1E27 40%, #132C38)`,
+      accent: '#A78BFA',
+      body: `
+        <h1>Tool: <span style="color:#A78BFA">Lakebase</span></h1>
+        <h2>tools/lakebase.py &mdash; Transactional read &amp; write via Postgres wire protocol</h2>
+        <div class="found-grid">
+          <div class="found-panel A" style="--d:0.08s">
+            <div class="found-header found-h-purple">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="1.6" stroke-linecap="round"><ellipse cx="12" cy="6" rx="9" ry="3"/><path d="M3 6v6c0 1.66 4.03 3 9 3s9-1.34 9-3V6"/><path d="M3 12v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6"/></svg>
+              <strong>query_lakebase</strong>
+            </div>
+            <div class="found-body">
+              <div class="code-snip" style="text-align:left">
+                <span class="c-cmd">@mcp.tool()</span>
+                <span class="c-cmd">def query_lakebase(query: str) -> str:</span>
+                <span class="c-comment">&nbsp;&nbsp;"""Execute SQL on Lakebase."""</span>
+                <span class="c-cmd" style="margin-top:4px">&nbsp;&nbsp;token = get_oauth_token()</span>
+                <span class="c-cmd">&nbsp;&nbsp;conn = psycopg2.connect(</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;host=LAKEBASE_HOST,</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;port=5432,</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;password=<span style="color:#F59E0B">token</span>,  # OAuth!</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;sslmode="require")</span>
+                <span class="c-cmd" style="margin-top:4px">&nbsp;&nbsp;with conn.cursor() as cur:</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;cur.execute(query)</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;return json.dumps(results)</span>
+              </div>
+            </div>
+          </div>
+          <div class="found-panel A" style="--d:0.2s">
+            <div class="found-header found-h-purple">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="1.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              <strong>write_to_lakebase</strong>
+            </div>
+            <div class="found-body">
+              <p class="found-desc">Auto-creates tables and persists JSON payloads. The AI can chain tools &mdash; e.g., fetch weather &rarr; write to Lakebase.</p>
+              <div class="code-snip" style="text-align:left;margin-top:6px">
+                <span class="c-cmd">@mcp.tool()</span>
+                <span class="c-cmd">def write_to_lakebase(</span>
+                <span class="c-cmd">&nbsp;&nbsp;payload: str,</span>
+                <span class="c-cmd">&nbsp;&nbsp;table_name: str = "api_payloads"</span>
+                <span class="c-cmd">) -> str:</span>
+                <span class="c-cmd" style="margin-top:4px">&nbsp;&nbsp;# Auto-create table if missing</span>
+                <span class="c-cmd">&nbsp;&nbsp;cur.execute("""CREATE TABLE</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;IF NOT EXISTS ... (</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id SERIAL PRIMARY KEY,</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ingested_at TIMESTAMPTZ,</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;payload JSONB)""")</span>
+                <span class="c-cmd">&nbsp;&nbsp;cur.execute("INSERT ... RETURNING id")</span>
+              </div>
+              <div class="found-note" style="margin-top:8px">
+                <strong>Key:</strong> OAuth token is used as the Postgres password. The SDK refreshes tokens automatically.
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+    },
+
+    // ─────────────────────────────── 9. TOOL: MODEL SERVING + EXTERNAL APIS
+    {
+      id: 'tool-models-apis',
+      bg: `radial-gradient(ellipse at 60% 30%, #162A34 0%, ${DB.tealDeep} 70%)`,
+      accent: DB.orange,
+      body: `
+        <h1>Tools: <span style="color:${DB.orange}">Models &amp; APIs</span></h1>
+        <h2>Invoke LLMs hosted on Databricks and wrap any external REST API as an MCP tool</h2>
+        <div class="scale-grid">
+          <div class="found-panel A" style="--d:0.08s">
+            <div class="found-header found-h-rose">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FB7185" stroke-width="1.6" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              <strong>invoke_model</strong>
+              <span class="found-h-tag">LLM</span>
+            </div>
+            <div class="found-body">
+              <p class="found-desc">Call any model hosted on Databricks Model Serving &mdash; LLMs, embeddings, or custom ML models. Uses the native SDK query method.</p>
+              <div class="code-snip" style="text-align:left;margin-top:6px">
+                <span class="c-cmd">@mcp.tool()</span>
+                <span class="c-cmd">def invoke_model(prompt: str,</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;max_tokens: int = 512) -> str:</span>
+                <span class="c-cmd" style="margin-top:4px">&nbsp;&nbsp;response = w.serving_endpoints</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;.query(</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name=MODEL_SERVING_ENDPOINT,</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;messages=[{"role": "user",</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"content": prompt}],</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;max_tokens=max_tokens)</span>
+                <span class="c-cmd" style="margin-top:4px">&nbsp;&nbsp;return response.choices[0]</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;.message.content</span>
+              </div>
+            </div>
+          </div>
+          <div class="scale-right">
+            <div class="found-panel found-panel-sm A" style="--d:0.2s">
+              <div class="found-header found-h-gold">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10A15.3 15.3 0 0112 2z"/></svg>
+                <strong>External APIs</strong>
+                <span class="found-h-tag">REST</span>
+              </div>
+              <div class="found-body">
+                <p class="found-desc found-desc-sm">Wrap any REST API as a tool. The AI calls it when needed &mdash; e.g., "What's the weather in Milan?"</p>
+                <div class="code-snip" style="text-align:left;margin-top:4px">
+                  <span class="c-cmd">@mcp.tool()</span>
+                  <span class="c-cmd">def fetch_weather(</span>
+                  <span class="c-cmd">&nbsp;&nbsp;latitude: float = 45.46,</span>
+                  <span class="c-cmd">&nbsp;&nbsp;longitude: float = 9.19</span>
+                  <span class="c-cmd">) -> str:</span>
+                  <span class="c-cmd">&nbsp;&nbsp;# Calls Open-Meteo API</span>
+                  <span class="c-cmd">&nbsp;&nbsp;return json.dumps(weather)</span>
+                </div>
+              </div>
+            </div>
+            <div class="found-panel found-panel-sm A" style="--d:0.3s">
+              <div class="found-header found-h-green">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64FFDA" stroke-width="1.6" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <strong>Customer APIs (Vita)</strong>
+                <span class="found-h-tag">Domain</span>
+              </div>
+              <div class="found-body">
+                <p class="found-desc found-desc-sm">12 tools from one Swagger spec &mdash; policies, proposals, beneficiaries, payments. Same <code class="ka-code">register()</code> pattern with JWT auth.</p>
+                <div class="builder-chips" style="margin-top:4px">
+                  <span class="b-chip b-chip-teal">vita_list_polizze</span>
+                  <span class="b-chip b-chip-teal">vita_get_polizza</span>
+                  <span class="b-chip b-chip-teal">vita_get_beneficiari</span>
+                  <span class="b-chip b-chip-orange">+ 9 more tools</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+    },
+
+    // ─────────────────────────────── 10. CONFIGURATION
+    {
+      id: 'configuration',
+      bg: `linear-gradient(160deg, #060D12, #0D1E27 40%, #132C38)`,
+      accent: '#F59E0B',
+      body: `
+        <h1><span style="color:#F59E0B">Configuration</span></h1>
+        <h2>config.py &mdash; centralized settings, one place to change everything</h2>
+        <div class="found-grid">
+          <div class="found-panel A" style="--d:0.08s">
+            <div class="found-header found-h-gold">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+              <strong>config.py</strong>
+            </div>
+            <div class="found-body">
+              <div class="code-snip" style="text-align:left">
+                <span class="c-comment"># Databricks Workspace</span>
+                <span class="c-cmd">DATABRICKS_HOST = "https://...</span>
+                <span class="c-cmd">&nbsp;&nbsp;.cloud.databricks.com"</span>
+                <span class="c-cmd">SQL_WAREHOUSE_ID = "4b9b95..."</span>
+                <span class="c-cmd">MODEL_SERVING_ENDPOINT =</span>
+                <span class="c-cmd">&nbsp;&nbsp;"databricks-gpt-5-mini"</span>
+                <span class="c-cmd" style="margin-top:8px"></span>
+                <span class="c-comment"># Lakebase (Postgres-wire)</span>
+                <span class="c-cmd">LAKEBASE_HOST = "ep-polished-..."</span>
+                <span class="c-cmd">LAKEBASE_USER = "user@company.com"</span>
+                <span class="c-cmd">LAKEBASE_PORT = 5432</span>
+                <span class="c-cmd">LAKEBASE_DATABASE = "databricks_pg"</span>
+                <span class="c-cmd" style="margin-top:8px"></span>
+                <span class="c-comment"># Customer API</span>
+                <span class="c-cmd">VITA_API_BASE_URL = "https://..."</span>
+                <span class="c-cmd">VITA_API_TOKEN = "jwt_token"</span>
+              </div>
+            </div>
+          </div>
+          <div class="found-panel A" style="--d:0.2s">
+            <div class="found-header found-h-gold">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.6" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+              <strong>Production Secrets</strong>
+            </div>
+            <div class="found-body">
+              <p class="found-desc">In production, replace hardcoded values with environment variables or Databricks secrets.</p>
+              <div class="mem-types" style="margin-top:6px">
+                <div class="mem-type">
+                  <span class="mem-type-dot mem-dot-gold"></span>
+                  <div>
+                    <strong>Environment Variables</strong>
+                    <span><code class="ka-code">os.environ["DATABRICKS_HOST"]</code> &mdash; standard for containers and Databricks Apps</span>
+                  </div>
+                </div>
+                <div class="mem-type">
+                  <span class="mem-type-dot mem-dot-cyan"></span>
+                  <div>
+                    <strong>Databricks Secrets</strong>
+                    <span><code class="ka-code">dbutils.secrets.get(scope, key)</code> &mdash; encrypted at rest, scoped access via UC</span>
+                  </div>
+                </div>
+                <div class="mem-type">
+                  <span class="mem-type-dot mem-dot-purple"></span>
+                  <div>
+                    <strong>Placeholders pattern</strong>
+                    <span>Tools return a clear error if PLACEHOLDER values remain &mdash; fail-fast, never silent</span>
+                  </div>
+                </div>
+              </div>
+              <div class="found-note" style="margin-top:8px">
+                <strong>Rule:</strong> Never commit real tokens. Use <code class="ka-code">.gitignore</code> or env vars.
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+    },
+
+    // ─────────────────────────────── 11. EXTENDING THE SERVER
+    {
+      id: 'extending',
+      bg: `radial-gradient(ellipse at 30% 30%, #162A34 0%, ${DB.tealDeep} 70%)`,
+      accent: '#64FFDA',
+      body: `
+        <h1>Extending the <span style="color:#64FFDA">Server</span></h1>
+        <h2>Add a new tool domain in 2 files &mdash; zero changes to existing code</h2>
+        <div class="found-grid">
+          <div class="found-panel A" style="--d:0.08s">
+            <div class="found-header found-h-green">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64FFDA" stroke-width="1.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              <strong>Step 1: tools/my_domain.py</strong>
+            </div>
+            <div class="found-body">
+              <div class="code-snip" style="text-align:left">
+                <span class="c-comment">"""My new tool domain."""</span>
+                <span class="c-cmd">import json</span>
+                <span class="c-cmd" style="margin-top:6px">def register(mcp, w):</span>
+                <span class="c-cmd">&nbsp;&nbsp;@mcp.tool()</span>
+                <span class="c-cmd">&nbsp;&nbsp;def search_catalog(</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;table_pattern: str</span>
+                <span class="c-cmd">&nbsp;&nbsp;) -> str:</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;"""Search Unity Catalog for</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;tables matching a pattern.</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;Args:</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;table_pattern: Glob pattern</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;"""</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;tables = w.tables.list(</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;catalog_name="main",</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;schema_name="default")</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;matched = [t for t in tables</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if table_pattern in t.name]</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;return json.dumps([</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{"name": t.full_name,</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"type": t.table_type}</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for t in matched])</span>
+              </div>
+            </div>
+          </div>
+          <div class="found-panel A" style="--d:0.2s">
+            <div class="found-header found-h-green">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64FFDA" stroke-width="1.6" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <strong>Step 2: Register in server.py</strong>
+            </div>
+            <div class="found-body">
+              <p class="found-desc">Add two lines to server.py &mdash; import and register.</p>
+              <div class="code-snip" style="text-align:left;margin-top:6px">
+                <span class="c-comment"># Add to server.py imports</span>
+                <span class="c-cmd">from tools import my_domain</span>
+                <span class="c-cmd">my_domain.register(mcp, w)</span>
+              </div>
+              <div class="ka-steps" style="margin-top:12px">
+                <div class="ka-step"><span class="ka-n">1</span><span style="font-size:0.94rem;color:${DB.w60}">Create <code class="ka-code">tools/my_domain.py</code></span></div>
+                <div class="ka-step"><span class="ka-n">2</span><span style="font-size:0.94rem;color:${DB.w60}">Add <code class="ka-code">register(mcp, w)</code> call in server.py</span></div>
+                <div class="ka-step ka-step-final"><span class="ka-n ka-n-done">&#10003;</span><span style="font-size:0.94rem;color:${DB.w60}">Restart the server &mdash; done!</span></div>
+              </div>
+              <div class="found-note" style="margin-top:12px">
+                <strong>Ideas for new domains:</strong>
+              </div>
+              <div class="builder-chips" style="margin-top:6px">
+                <span class="b-chip b-chip-teal">Unity Catalog</span>
+                <span class="b-chip b-chip-teal">Lakeflow Jobs</span>
+                <span class="b-chip b-chip-teal">Vector Search</span>
+                <span class="b-chip b-chip-orange">CRM API</span>
+                <span class="b-chip b-chip-orange">Jira API</span>
+                <span class="b-chip b-chip-teal">MLflow</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+    },
+
+    // ─────────────────────────────── 12. DEPLOYING ON DATABRICKS APPS
+    {
+      id: 'deploy',
+      bg: `linear-gradient(160deg, #060D12, #0D1E27 40%, #132C38)`,
+      accent: DB.orange,
+      body: `
+        <h1>Deploy on <span style="color:${DB.orange}">Databricks Apps</span></h1>
+        <h2>Package the MCP server as a Databricks App for production use with SSE transport</h2>
+        <div class="found-grid">
+          <div class="found-panel A" style="--d:0.08s">
+            <div class="found-header found-h-orange">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${DB.orangeLight}" stroke-width="1.6" stroke-linecap="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+              <strong>app.yaml</strong>
+            </div>
+            <div class="found-body">
+              <div class="code-snip" style="text-align:left">
+                <span class="c-comment"># app.yaml</span>
+                <span class="c-cmd">command:</span>
+                <span class="c-cmd">&nbsp;&nbsp;- "python"</span>
+                <span class="c-cmd">&nbsp;&nbsp;- "server.py"</span>
+                <span class="c-cmd" style="margin-top:6px">env:</span>
+                <span class="c-cmd">&nbsp;&nbsp;- name: DATABRICKS_HOST</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;valueFrom: "{{host}}"</span>
+                <span class="c-cmd">&nbsp;&nbsp;- name: DATABRICKS_TOKEN</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;valueFrom: "{{secrets/token}}"</span>
+                <span class="c-cmd" style="margin-top:6px">resources:</span>
+                <span class="c-cmd">&nbsp;&nbsp;- name: sql-warehouse</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;sql_warehouse:</span>
+                <span class="c-cmd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id: "4b9b953939869799"</span>
+              </div>
+            </div>
+          </div>
+          <div class="found-panel A" style="--d:0.2s">
+            <div class="found-header found-h-orange">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${DB.orangeLight}" stroke-width="1.6" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              <strong>Deployment Steps</strong>
+            </div>
+            <div class="found-body">
+              <div class="ka-steps">
+                <div class="ka-step"><span class="ka-n">1</span><span style="font-size:0.94rem;color:${DB.w60}">Switch transport: <code class="ka-code">mcp.run(transport="sse")</code></span></div>
+                <div class="ka-step"><span class="ka-n">2</span><span style="font-size:0.94rem;color:${DB.w60}">Add <code class="ka-code">app.yaml</code> with env vars and resources</span></div>
+                <div class="ka-step"><span class="ka-n">3</span><span style="font-size:0.94rem;color:${DB.w60}">Switch auth to M2M (Service Principal)</span></div>
+                <div class="ka-step"><span class="ka-n">4</span><span style="font-size:0.94rem;color:${DB.w60}"><code class="ka-code">databricks apps deploy mcp-server</code></span></div>
+                <div class="ka-step ka-step-final"><span class="ka-n ka-n-done">&#10003;</span><span style="font-size:0.94rem;color:${DB.w60}">Live at <code class="ka-code">https://&lt;workspace&gt;/apps/mcp-server</code></span></div>
+              </div>
+              <div class="dp-pipeline" style="margin-top:12px">
+                <div class="dp-stage dp-s1"><strong>Local (stdio)</strong><span>Dev &amp; test</span></div>
+                <div class="dp-arrow-s">&#8594;</div>
+                <div class="dp-stage dp-s2"><strong>App (SSE)</strong><span>Deployed &amp; managed</span></div>
+                <div class="dp-arrow-s">&#8594;</div>
+                <div class="dp-stage dp-s3"><strong>Production</strong><span>Scaled &amp; governed</span></div>
+              </div>
+              <div class="found-note" style="margin-top:8px">
+                <strong>Key:</strong> Same server code &mdash; only the transport mode changes between local and deployed.
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+    },
+
+    // ─────────────────────────────── 13. PRODUCTION CHECKLIST
+    {
+      id: 'production',
+      bg: `radial-gradient(ellipse at 50% 40%, #162A34 0%, ${DB.tealDeep} 70%)`,
+      accent: DB.orange,
+      body: `
+        <h1>Production <span style="color:${DB.orange}">Checklist</span></h1>
+        <h2>From dev laptop to enterprise-grade &mdash; what changes when you go to production</h2>
+        <div class="cat-grid">
+          <div class="cat-card A" style="--d:0.06s">
+            <span class="cat-phase cat-ph1">Auth</span>
+            <div class="cat-ico cat-ico-rose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FB7185" stroke-width="1.6" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <strong>OAuth M2M</strong>
+            <p>Switch from U2M (user login) to M2M (Service Principal) for unattended operation. No human in the loop.</p>
+          </div>
+          <div class="cat-card A" style="--d:0.1s">
+            <span class="cat-phase cat-ph1">Auth</span>
+            <div class="cat-ico cat-ico-cyan"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+            <strong>Secrets Management</strong>
+            <p>Move all tokens, API keys, and connection strings to Databricks Secrets or env vars. Zero hardcoded credentials.</p>
+          </div>
+          <div class="cat-card A" style="--d:0.14s">
+            <span class="cat-phase cat-ph2">Ops</span>
+            <div class="cat-ico cat-ico-gold"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.6" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+            <strong>Monitoring</strong>
+            <p>Log every tool invocation. Track latency, error rates, and token usage. Use Databricks system tables for auditability.</p>
+          </div>
+          <div class="cat-card A" style="--d:0.18s">
+            <span class="cat-phase cat-ph2">Ops</span>
+            <div class="cat-ico cat-ico-orange"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${DB.orangeLight}" stroke-width="1.6" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+            <strong>Scaling</strong>
+            <p>Databricks Apps auto-scale. SQL Warehouses scale independently. Lakebase handles connection pooling. Design for stateless tools.</p>
+          </div>
+          <div class="cat-card A" style="--d:0.22s">
+            <span class="cat-phase cat-ph3">Gov</span>
+            <div class="cat-ico cat-ico-purple"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+            <strong>Access Control</strong>
+            <p>Use Unity Catalog ACLs to restrict which tools can access which data. Least-privilege Service Principals per domain.</p>
+          </div>
+          <div class="cat-card A" style="--d:0.26s">
+            <span class="cat-phase cat-ph3">Gov</span>
+            <div class="cat-ico cat-ico-green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64FFDA" stroke-width="1.6" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            <strong>Input Validation</strong>
+            <p>Validate all tool inputs. Use parameterized queries (never string interpolation). Reject malformed payloads before execution.</p>
+          </div>
+        </div>
+      `,
+    },
+
+    // ─────────────────────────────── 14. QUICK START
+    {
+      id: 'quickstart',
+      bg: `linear-gradient(160deg, #060D12, #0D1E27 40%, #132C38)`,
+      accent: '#64FFDA',
+      body: `
+        <h1>Quick <span style="color:#64FFDA">Start</span></h1>
+        <h2>From zero to running MCP server in 4 commands</h2>
+        <div class="found-panel A" style="--d:0.08s;max-width:800px;width:100%">
+          <div class="found-header found-h-green">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64FFDA" stroke-width="1.6" stroke-linecap="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+            <strong>Terminal</strong>
+          </div>
+          <div class="found-body">
+            <div class="code-snip" style="text-align:left">
+              <span class="c-comment"># 1. Clone &amp; install</span>
+              <span class="c-cmd">git clone &lt;repo&gt; && cd MCP_demo</span>
+              <span class="c-cmd">python -m venv .venv && source .venv/bin/activate</span>
+              <span class="c-cmd">pip install -r requirements.txt</span>
+              <span class="c-cmd" style="margin-top:10px"></span>
+              <span class="c-comment"># 2. Authenticate with Databricks</span>
+              <span class="c-cmd">databricks auth login --host https://YOUR-WORKSPACE.cloud.databricks.com</span>
+              <span class="c-cmd" style="margin-top:10px"></span>
+              <span class="c-comment"># 3. Edit config.py with your values</span>
+              <span class="c-cmd">vim config.py  # Set DATABRICKS_HOST, SQL_WAREHOUSE_ID, etc.</span>
+              <span class="c-cmd" style="margin-top:10px"></span>
+              <span class="c-comment"># 4. Register in Claude Code</span>
+              <span class="c-cmd">claude mcp add --transport stdio databricks-demo -- \\</span>
+              <span class="c-cmd">&nbsp;&nbsp;"$(pwd)/.venv/bin/python" "$(pwd)/server.py"</span>
+            </div>
+          </div>
+        </div>
+        <div class="gap-footer A" style="--d:0.3s;max-width:800px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64FFDA" stroke-width="1.8" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span>That's it &mdash; Claude Code now has access to your SQL Warehouse, Lakebase, Model Serving, and all registered APIs</span>
+        </div>
+      `,
+    },
+
+    // ─────────────────────────────── 15. SUMMARY
+    {
+      id: 'summary',
+      bg: `radial-gradient(ellipse at 50% 35%, #162A34 0%, ${DB.tealDeep} 70%)`,
+      accent: DB.orange,
+      body: `
+        <svg class="amp-logo" width="60" height="52" viewBox="0 0 100 85" fill="none">
+          <path d="M50 2 L93 24 L50 46 L7 24 Z" stroke="${DB.orange}" stroke-width="5.5" stroke-linejoin="round" fill="none"/>
+          <path d="M7 37 L50 59 L93 37" stroke="${DB.orange}" stroke-width="5.5" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+          <path d="M7 50 L50 72 L93 50" stroke="${DB.orange}" stroke-width="5.5" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+        </svg>
+        <h1 class="A" style="--d:0.08s">Key <span style="color:${DB.orange}">Takeaways</span></h1>
+        <div class="gap-grid" style="margin-top:14px">
+          <div class="gap-card A" style="--d:0.12s">
+            <div class="gap-ico gap-ico-cyan">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="1.6" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <strong>Simple to Build</strong>
+            <p>3 dependencies. ~30 lines for the server. The <code class="ka-code">@mcp.tool()</code> decorator does the heavy lifting &mdash; type hints become the API schema.</p>
+          </div>
+          <div class="gap-card A" style="--d:0.22s">
+            <div class="gap-ico gap-ico-rose">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FB7185" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </div>
+            <strong>Modular by Design</strong>
+            <p>The <code class="ka-code">register(mcp, w)</code> pattern keeps domains independent. Add new tools without touching existing code.</p>
+          </div>
+          <div class="gap-card A" style="--d:0.32s">
+            <div class="gap-ico gap-ico-amber">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.6" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <strong>Production Ready</strong>
+            <p>Deploy as a Databricks App. Switch from stdio to SSE. OAuth M2M for unattended. Unity Catalog for governance.</p>
+          </div>
+        </div>
+        <div class="amp-pills A" style="--d:0.42s;margin-top:18px">
+          <span class="amp-pill amp-pill-orange">github.com/...</span>
+          <span class="amp-pill amp-pill-teal">Try it today</span>
+        </div>
+        <p class="amp-sub A" style="--d:0.5s">Built with FastMCP + Databricks SDK &mdash; the fastest path from AI prototype to enterprise production</p>
+      `,
+    },
+
+  ];
+
+  let cur = 0, moving = false;
+
+  const s = document.createElement('style');
+  s.textContent = `
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap');
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'DM Sans',system-ui,sans-serif;overflow:hidden;height:100vh;width:100vw;cursor:pointer;-webkit-font-smoothing:antialiased;background:${DB.tealDeep}}
+    #app{position:relative;width:100vw;height:100vh;overflow:hidden}
+    .sl{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:28px 40px;opacity:0;transform:translateY(36px) scale(.97);transition:opacity .5s cubic-bezier(.4,0,.2,1),transform .5s cubic-bezier(.4,0,.2,1);pointer-events:none;z-index:0;overflow-y:auto}
+    .sl.on{opacity:1;transform:none;pointer-events:auto;z-index:2}
+    .sl.eu{opacity:0;transform:translateY(-50px) scale(.96);z-index:1}
+    .sl.ed{opacity:0;transform:translateY(50px) scale(.96);z-index:1}
+    .sl-in{max-width:1260px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center}
+    .sl h1{font-size:clamp(1.89rem,4.3vw,2.97rem);font-weight:800;color:#fff;letter-spacing:-.03em;line-height:1.1;margin-bottom:6px;flex-shrink:0}
+    .sl h2{font-size:clamp(1.08rem,2vw,1.35rem);font-weight:400;color:${DB.w45};margin-bottom:18px;line-height:1.5;flex-shrink:0}
+    .pbar{position:fixed;top:0;left:0;height:3px;background:${DB.orange};transition:width .5s cubic-bezier(.4,0,.2,1);z-index:100;box-shadow:0 0 12px ${DB.orange}}
+    .dots{position:fixed;right:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:100}
+    .dot{width:6px;height:6px;border-radius:50%;background:${DB.w20};cursor:pointer;transition:all .3s;border:0;padding:0}
+    .dot:hover{background:${DB.w45};transform:scale(1.3)}
+    .dot.on{background:var(--ac,${DB.orange});transform:scale(1.6);box-shadow:0 0 8px var(--ac)}
+    @keyframes fu{to{opacity:1;transform:translateY(0)}}
+    .A{opacity:0;transform:translateY(16px);animation:fu .45s ease forwards;animation-delay:var(--d,.1s)}
+    .sl.on .A{animation-play-state:running}
+
+    /* ═══ COVER ═══ */
+    .amp-logo{margin-bottom:12px;filter:drop-shadow(0 0 18px rgba(255,54,33,.3))}
+    .amp-wordmark{font-size:1.11rem;font-weight:800;letter-spacing:.32em;color:${DB.w20};margin-bottom:18px;text-transform:uppercase}
+    .amp-tagline{font-size:clamp(1.13rem,2vw,1.42rem);color:${DB.w60};margin-top:8px;margin-bottom:22px}
+    .amp-pills{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+    .amp-pill{padding:5px 16px;border-radius:20px;font-size:1.03rem;font-weight:700;letter-spacing:.03em}
+    .amp-pill-orange{background:rgba(255,54,33,.12);border:1px solid rgba(255,54,33,.3);color:${DB.orangeLight}}
+    .amp-pill-teal{background:rgba(34,211,238,.07);border:1px solid rgba(34,211,238,.2);color:#22D3EE}
+    .amp-pill-gold{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);color:#F59E0B}
+    .amp-sub{font-size:0.97rem;color:${DB.w20};margin-top:14px;letter-spacing:.02em}
+
+    /* ═══ GAP CARDS ═══ */
+    .gap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:1040px;width:100%}
+    .gap-card{padding:20px 16px 16px;border-radius:14px;background:${DB.w05};border:1px solid ${DB.w10};text-align:left;display:flex;flex-direction:column;gap:7px;transition:all .3s}
+    .gap-card:hover{transform:translateY(-3px);border-color:${DB.w20};background:rgba(255,255,255,.06)}
+    .gap-ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .gap-ico-rose{background:rgba(251,113,133,.08);border:1px solid rgba(251,113,133,.18)}
+    .gap-ico-amber{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.15)}
+    .gap-ico-cyan{background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.13)}
+    .gap-ico-green{background:rgba(100,255,218,.05);border:1px solid rgba(100,255,218,.12)}
+    .gap-ico-purple{background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.16)}
+    .gap-num{font-size:0.78rem;font-weight:800;letter-spacing:.08em;color:${DB.w20};text-transform:uppercase}
+    .gap-card strong{font-size:1.24rem;color:#fff;font-weight:700;line-height:1.2}
+    .gap-card p{font-size:1rem;color:${DB.w45};line-height:1.55;margin:0;flex:1}
+    .gap-footer{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:16px;padding:9px 18px;border-radius:10px;background:rgba(255,54,33,.04);border:1px solid rgba(255,54,33,.1);font-size:1.03rem;color:${DB.w60}}
+
+    /* ═══ ARCHITECTURE ═══ */
+    .arch-diagram{display:flex;flex-direction:column;align-items:center;gap:3px;max-width:880px;width:100%}
+    .arch-layer{width:100%;border-radius:11px;padding:8px 12px}
+    .arch-layer-top{background:rgba(42,77,90,.2);border:1px solid rgba(42,77,90,.4)}
+    .arch-layer-bridge{background:rgba(255,54,33,.06);border:1.5px solid rgba(255,54,33,.22);padding:10px 16px}
+    .arch-layer-services{background:rgba(255,54,33,.03);border:1px solid rgba(255,54,33,.1)}
+    .arch-layer-db{background:rgba(42,77,90,.15);border:1px solid rgba(42,77,90,.3);padding:10px 14px}
+    .arch-layer-label{font-size:0.76rem;font-weight:800;letter-spacing:.1em;color:${DB.w20};text-transform:uppercase;margin-bottom:6px;text-align:center}
+    .arch-db-label{color:${DB.w30}}
+    .arch-layer-chips{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+    .arch-chip{padding:4px 10px;border-radius:6px;font-size:0.92rem;font-weight:600}
+    .arch-chip-teal{background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.14);color:#22D3EE}
+    .arch-chip-cyan{background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.14);color:#22D3EE}
+    .arch-chip-orange{background:rgba(255,54,33,.07);border:1px solid rgba(255,54,33,.18);color:${DB.orangeLight}}
+    .arch-chip-rose{background:rgba(251,113,133,.06);border:1px solid rgba(251,113,133,.14);color:#FB7185}
+    .arch-chip-gold{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.14);color:#F59E0B}
+    .arch-chip-purple{background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.14);color:#A78BFA}
+    .arch-chip-green{background:rgba(100,255,218,.05);border:1px solid rgba(100,255,218,.12);color:#64FFDA}
+    .arch-down{padding:2px 0;display:flex;justify-content:center}
+    .arch-bridge-text{font-size:0.92rem;font-weight:700;color:${DB.w80};text-align:center;letter-spacing:.02em}
+    .arch-db-inner{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+    .arch-db-item{padding:6px 10px;border-radius:7px;background:${DB.w05};border:1px solid ${DB.w10};text-align:center;font-size:0.96rem;font-weight:700;color:#fff}
+    .arch-db-item small{display:block;font-size:0.8rem;font-weight:400;color:${DB.w30};margin-top:2px}
+    .arch-db-gold{background:rgba(245,158,11,.05);border-color:rgba(245,158,11,.15);color:#F59E0B}
+
+    /* ═══ FOUND PANELS ═══ */
+    .found-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:1060px;width:100%}
+    .found-panel{border-radius:13px;background:${DB.w05};border:1px solid ${DB.w10};overflow:hidden;display:flex;flex-direction:column}
+    .found-panel-sm{border-radius:11px;background:${DB.w05};border:1px solid ${DB.w10};overflow:hidden;display:flex;flex-direction:column}
+    .found-header{display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:1.08rem;font-weight:700;color:#fff;border-bottom:1px solid ${DB.w10}}
+    .found-h-rose{background:rgba(251,113,133,.06);border-bottom-color:rgba(251,113,133,.1)}
+    .found-h-cyan{background:rgba(34,211,238,.05);border-bottom-color:rgba(34,211,238,.1)}
+    .found-h-cyan2{background:rgba(34,211,238,.05);border-bottom-color:rgba(34,211,238,.1)}
+    .found-h-orange{background:rgba(255,54,33,.06);border-bottom-color:rgba(255,54,33,.1)}
+    .found-h-gold{background:rgba(245,158,11,.05);border-bottom-color:rgba(245,158,11,.1)}
+    .found-h-purple{background:rgba(167,139,250,.05);border-bottom-color:rgba(167,139,250,.1)}
+    .found-h-green{background:rgba(100,255,218,.04);border-bottom-color:rgba(100,255,218,.09)}
+    .found-h-tag{font-size:0.76rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 6px;border-radius:4px;margin-left:auto;background:rgba(255,255,255,.05);color:${DB.w20}}
+    .found-body{padding:12px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
+    .found-desc{font-size:1.03rem;color:${DB.w60};line-height:1.55;margin:0;text-align:left}
+    .found-desc-sm{font-size:0.96rem}
+    .found-note{font-size:0.92rem;color:${DB.w30};padding:5px 9px;border-radius:6px;background:${DB.w05};border:1px solid ${DB.w10};text-align:left}
+    .found-note strong{color:${DB.w60}}
+    .found-api-title{font-size:0.78rem;font-weight:800;letter-spacing:.08em;color:${DB.w20};text-transform:uppercase;margin-bottom:3px;text-align:left}
+
+    /* Memory types */
+    .mem-types{display:flex;flex-direction:column;gap:5px}
+    .mem-type{display:flex;align-items:flex-start;gap:8px;padding:7px 10px;border-radius:8px;background:${DB.w05};border:1px solid ${DB.w10};text-align:left}
+    .mem-type-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+    .mem-dot-cyan{background:#22D3EE;box-shadow:0 0 6px rgba(34,211,238,.4)}
+    .mem-dot-purple{background:#A78BFA;box-shadow:0 0 6px rgba(167,139,250,.35)}
+    .mem-dot-gold{background:#F59E0B;box-shadow:0 0 6px rgba(245,158,11,.35)}
+    .mem-type strong{font-size:0.99rem;color:#fff;font-weight:700;display:block;margin-bottom:1px}
+    .mem-type span{font-size:0.88rem;color:${DB.w45};line-height:1.45}
+
+    /* Code */
+    .code-snip{background:rgba(0,0,0,.28);border-radius:7px;padding:9px 10px;display:flex;flex-direction:column;gap:1px;border:1px solid ${DB.w10}}
+    .c-comment{font-size:0.84rem;color:${DB.w20};font-family:monospace}
+    .c-cmd{font-size:0.89rem;color:#64FFDA;font-family:monospace;padding-bottom:1px}
+    .ka-code{font-family:monospace;font-size:.95em;background:rgba(255,255,255,.07);padding:1px 4px;border-radius:3px;color:${DB.w60}}
+
+    /* Steps */
+    .ka-steps{display:flex;flex-direction:column;gap:3px}
+    .ka-step{display:flex;align-items:center;gap:7px;padding:4px 9px;border-radius:6px;background:${DB.w05};border:1px solid ${DB.w10}}
+    .ka-step-final{background:rgba(255,54,33,.04);border-color:rgba(255,54,33,.14)}
+    .ka-n{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.08);font-size:0.84rem;font-weight:800;color:${DB.w60};display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .ka-n-done{background:rgba(255,54,33,.15);color:${DB.orangeLight}}
+
+    /* Scale grid */
+    .scale-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;max-width:1060px;width:100%}
+    .scale-right{display:flex;flex-direction:column;gap:8px}
+
+    /* Builder chips */
+    .builder-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+    .b-chip{padding:2px 9px;border-radius:5px;font-size:0.88rem;font-weight:700}
+    .b-chip-teal{background:rgba(34,211,238,.07);border:1px solid rgba(34,211,238,.14);color:#22D3EE}
+    .b-chip-orange{background:rgba(255,54,33,.08);border:1px solid rgba(255,54,33,.18);color:${DB.orangeLight}}
+
+    /* Gov tree */
+    .gov-tree{background:rgba(0,0,0,.25);border-radius:13px;padding:14px 16px;border:1px solid ${DB.w10}}
+    .gov-t-root{font-family:monospace;font-size:0.94rem;line-height:1.9}
+
+    /* Pipeline */
+    .dp-pipeline{display:flex;align-items:center;gap:5px;padding:8px;background:rgba(0,0,0,.15);border-radius:8px;border:1px solid ${DB.w10};justify-content:center}
+    .dp-stage{padding:6px 10px;border-radius:7px;text-align:center;flex:1}
+    .dp-s1{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.14)}
+    .dp-s2{background:rgba(255,54,33,.05);border:1px solid rgba(255,54,33,.1)}
+    .dp-s3{background:rgba(100,255,218,.04);border:1px solid rgba(100,255,218,.1)}
+    .dp-stage strong{display:block;font-size:0.94rem;color:#fff;font-weight:700}
+    .dp-stage span{font-size:0.82rem;color:${DB.w45}}
+    .dp-arrow-s{font-size:1.01rem;color:${DB.w20};flex-shrink:0}
+
+    /* Catalog grid */
+    .cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:980px;width:100%}
+    .cat-card{padding:14px 12px 12px;border-radius:12px;background:${DB.w05};border:1px solid ${DB.w10};text-align:left;display:flex;flex-direction:column;gap:5px;position:relative;transition:all .3s cubic-bezier(.4,0,.2,1)}
+    .cat-card:hover{transform:translateY(-3px);border-color:${DB.w20};background:rgba(255,255,255,.05);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+    .cat-phase{position:absolute;top:9px;right:9px;font-size:0.73rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:4px}
+    .cat-ph1{background:rgba(255,54,33,.12);color:${DB.orangeLight};border:1px solid rgba(255,54,33,.2)}
+    .cat-ph2{background:rgba(34,211,238,.08);color:#22D3EE;border:1px solid rgba(34,211,238,.18)}
+    .cat-ph3{background:rgba(245,158,11,.08);color:#F59E0B;border:1px solid rgba(245,158,11,.18)}
+    .cat-ico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-bottom:1px}
+    .cat-ico-rose{background:rgba(251,113,133,.08);border:1px solid rgba(251,113,133,.18)}
+    .cat-ico-cyan{background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.13)}
+    .cat-ico-orange{background:rgba(255,54,33,.08);border:1px solid rgba(255,54,33,.18)}
+    .cat-ico-gold{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.14)}
+    .cat-ico-purple{background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.16)}
+    .cat-ico-green{background:rgba(100,255,218,.05);border:1px solid rgba(100,255,218,.12)}
+    .cat-card strong{font-size:1.07rem;color:#fff;font-weight:700;line-height:1.2;padding-right:46px}
+    .cat-card p{font-size:0.9rem;color:${DB.w45};line-height:1.45;margin:0}
+
+    /* ═══ RESPONSIVE ═══ */
+    @media(max-width:900px){
+      .sl{padding:20px 14px}
+      .gap-grid,.found-grid,.scale-grid,.cat-grid,.arch-db-inner{grid-template-columns:1fr}
+      .dots{display:none}
+    }
+    @media(max-width:600px){
+      .gap-grid,.cat-grid{grid-template-columns:1fr}
+    }
+  `;
+  document.head.appendChild(s);
+
+  const app = document.getElementById('app');
+
+  // Progress bar
+  const pbar = document.createElement('div');
+  pbar.className = 'pbar';
+  app.appendChild(pbar);
+
+  // Dot navigation
+  const dots = document.createElement('div');
+  dots.className = 'dots';
+  slides.forEach((sl, i) => {
+    const d = document.createElement('button');
+    d.className = 'dot';
+    d.addEventListener('click', e => { e.stopPropagation(); go(i); });
+    dots.appendChild(d);
+  });
+  app.appendChild(dots);
+
+  // Slide elements
+  const els = slides.map((sl, i) => {
+    const div = document.createElement('div');
+    div.className = `sl${i === 0 ? ' on' : ''}`;
+    div.style.background = sl.bg;
+    div.innerHTML = `<div class="sl-in">${sl.body}</div>`;
+    app.appendChild(div);
+    return div;
+  });
+
+  function ui() {
+    pbar.style.width = `${((cur + 1) / slides.length) * 100}%`;
+    pbar.style.background = slides[cur].accent;
+    pbar.style.boxShadow = `0 0 12px ${slides[cur].accent}`;
+    dots.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('on', i === cur);
+      d.style.setProperty('--ac', slides[cur].accent);
+    });
+  }
+  ui();
+
+  function go(idx) {
+    if (moving || idx === cur || idx < 0 || idx >= slides.length) return;
+    moving = true;
+    const dir = idx > cur ? 'eu' : 'ed';
+    const prev = els[cur], next = els[idx];
+    prev.classList.remove('on');
+    prev.classList.add(dir);
+    next.querySelectorAll('.A').forEach(el => {
+      el.style.animation = 'none';
+      el.offsetHeight;
+      el.style.animation = '';
+    });
+    next.classList.remove('eu', 'ed');
+    next.classList.add('on');
+    cur = idx;
+    ui();
+    setTimeout(() => { prev.classList.remove('eu', 'ed'); moving = false; }, 550);
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(cur + 1); }
+    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); go(cur - 1); }
+    if (e.key === 'Home') { e.preventDefault(); go(0); }
+    if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
+  });
+
+  // Wheel
+  let wt = 0;
+  document.addEventListener('wheel', e => {
+    const now = Date.now();
+    if (now - wt < 700) return;
+    wt = now;
+    go(cur + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: true });
+
+  // Touch
+  let ty = 0;
+  document.addEventListener('touchstart', e => { ty = e.touches[0].clientY; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dy = ty - e.changedTouches[0].clientY;
+    if (Math.abs(dy) > 50) go(cur + (dy > 0 ? 1 : -1));
+  }, { passive: true });
+
+  // Click
+  app.addEventListener('click', e => {
+    if (e.target.closest('.dots')) return;
+    go(cur + 1);
+  });
+
+})();
+</script>
+</body>
+</html>
